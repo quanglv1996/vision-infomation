@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – MV Calculator{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  {% set stats = [
+    ("Camera",       camera_count, "bi-camera",     "primary"),
+    ("Lens",         lens_count,   "bi-camera-lens","info"),
+    ("Object",       object_count, "bi-box-seam",   "warning"),
+    ("Vision Setup", setup_count,  "bi-sliders",    "success"),
+  ] %}
+  {% for label, count, icon, color in stats %}
+  <div class="col-sm-6 col-xl-3">
+    <div class="card stat-card border-{{ color }}">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-{{ color }} bg-opacity-10 p-3">
+          <i class="bi {{ icon }} fs-4 text-{{ color }}"></i>
+        </div>
+        <div>
+          <div class="text-muted small">{{ label }}</div>
+          <div class="fs-3 fw-bold">{{ count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Recent setups -->
+<div class="card">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-clock-history me-2"></i>Vision Setup gần nhất</span>
+    <a href="/vision-setups/new" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Tạo mới</a>
+  </div>
+  <div class="card-body p-0">
+    {% if recent_setups %}
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Tên</th><th>Camera ID</th><th>Working Distance</th><th>Cập nhật</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in recent_setups %}
+        <tr>
+          <td><a href="/vision-setups/{{ s.id }}" class="fw-semibold text-decoration-none">{{ s.name }}</a></td>
+          <td><span class="font-monospace small text-muted">{{ s.camera_id[:8] }}…</span></td>
+          <td>{{ s.working_distance }} mm</td>
+          <td class="text-muted small">{{ s.updated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>
+            <a href="/vision-setups/{{ s.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center text-muted py-4">
+      <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+      Chưa có Vision Setup nào. <a href="/vision-setups/new">Tạo ngay</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Quick links -->
+<div class="row g-3 mt-2">
+  {% for label, url, icon, color in [
+      ("Thêm Camera",  "/cameras/new",       "bi-camera-plus",    "primary"),
+      ("Thêm Lens",    "/lenses/new",         "bi-plus-circle",    "info"),
+      ("Thêm Object",  "/objects/new",        "bi-box",            "warning"),
+      ("New Setup",    "/vision-setups/new",  "bi-sliders",        "success"),
+  ] %}
+  <div class="col-sm-6 col-lg-3">
+    <a href="{{ url }}" class="card text-decoration-none border-{{ color }} border-opacity-25 h-100">
+      <div class="card-body text-center py-3">
+        <i class="bi {{ icon }} fs-3 text-{{ color }} mb-1 d-block"></i>
+        <div class="small fw-semibold text-{{ color }}">{{ label }}</div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

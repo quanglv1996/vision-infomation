@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% set is_edit = lens is not none %}
+{% block title %}{{ 'Sửa' if is_edit else 'Thêm' }} Lens – MV Calculator{% endblock %}
+{% block page_title %}{{ 'Sửa Lens' if is_edit else 'Thêm Lens' }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="/lenses" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+{% endblock %}
+
+{% macro field(id, label, type="text", unit="", placeholder="", value="") %}
+<div class="col-md-4">
+  <label for="{{ id }}" class="form-label small fw-semibold">{{ label }}{% if unit %} <span class="text-muted">({{ unit }})</span>{% endif %}</label>
+  <input type="{{ type }}" class="form-control form-control-sm" id="{{ id }}" name="{{ id }}"
+    placeholder="{{ placeholder }}" value="{{ value if value is not none else '' }}">
+</div>
+{% endmacro %}
+
+{% macro sel(id, label, options, value="") %}
+<div class="col-md-4">
+  <label for="{{ id }}" class="form-label small fw-semibold">{{ label }}</label>
+  <select class="form-select form-select-sm" id="{{ id }}" name="{{ id }}">
+    <option value="">– Chọn –</option>
+    {% for opt in options %}<option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>{% endfor %}
+  </select>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form id="lens-form">
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-info-circle me-1"></i>Thông tin</h6>
+      <div class="row g-3 mb-4">
+        {{ field("name", "Tên Lens *", value=lens.name if lens else "") }}
+        {{ field("manufacturer", "Nhà sản xuất", value=lens.manufacturer if lens else "") }}
+        {{ field("model", "Model", value=lens.model if lens else "") }}
+      </div>
+
+      <hr>
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-eyeglasses me-1"></i>Quang học</h6>
+      <div class="row g-3 mb-4">
+        {{ field("focal_length",      "Tiêu cự",          "number","mm",     "e.g. 25",   lens.focal_length if lens else "") }}
+        {{ field("aperture",          "F-number",          "number","f/#",    "e.g. 2.8",  lens.aperture if lens else "") }}
+        {{ field("magnification",     "Magnification",     "number","",       "e.g. 0.5",  lens.magnification if lens else "") }}
+        {{ field("working_distance",  "Working Distance",  "number","mm",     "e.g. 150",  lens.working_distance if lens else "") }}
+        {{ field("min_working_distance","WD Min",          "number","mm",     "e.g. 100",  lens.min_working_distance if lens else "") }}
+        {{ field("max_working_distance","WD Max",          "number","mm",     "e.g. 500",  lens.max_working_distance if lens else "") }}
+        {{ field("image_circle",      "Image Circle",      "number","mm",     "e.g. 17.6", lens.image_circle if lens else "") }}
+        {{ field("distortion",        "Distortion",        "number","%",      "e.g. -0.2", lens.distortion if lens else "") }}
+      </div>
+
+      <hr>
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-graph-up me-1"></i>MTF</h6>
+      <div class="row g-3 mb-4">
+        {{ field("mtf10","MTF10","number","lp/mm","e.g. 200", lens.mtf10 if lens else "") }}
+        {{ field("mtf30","MTF30","number","lp/mm","e.g. 150", lens.mtf30 if lens else "") }}
+        {{ field("mtf50","MTF50","number","lp/mm","e.g. 100", lens.mtf50 if lens else "") }}
+      </div>
+
+      <hr>
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-tools me-1"></i>Cơ học & Khác</h6>
+      <div class="row g-3 mb-4">
+        {{ sel("mount", "Mount", ["C-Mount","F-Mount","M42","M58","M72","CS-Mount","T-Mount"], lens.mount if lens else "") }}
+        {{ sel("focus_type","Focus Type",["Fixed","Manual","Auto"], lens.focus_type if lens else "") }}
+        {{ sel("is_telecentric","Telecentric",["false","true"], (lens.is_telecentric | lower) if lens else "") }}
+        {{ field("telecentric_angle","Telecentric Angle","number","mrad","e.g. 0.5", lens.telecentric_angle if lens else "") }}
+        {{ field("weight","Trọng lượng","number","g","e.g. 120", lens.weight if lens else "") }}
+        <div class="col-md-8">
+          <label for="notes" class="form-label small fw-semibold">Ghi chú</label>
+          <input type="text" class="form-control form-control-sm" id="notes" name="notes"
+            value="{{ lens.notes if lens else '' }}">
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" onclick="saveLens('{{ lens.id if lens else '' }}')">
+          <i class="bi bi-check-lg me-1"></i>{{ 'Cập nhật' if is_edit else 'Tạo Lens' }}
+        </button>
+        <a href="/lenses" class="btn btn-outline-secondary">Huỷ</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Vision Setup – MV Calculator{% endblock %}
+{% block page_title %}Vision Setup{% endblock %}
+
+{% block topbar_actions %}
+<a href="/vision-setups/new" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tạo Setup</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-sliders me-1"></i> Danh sách Vision Setup
+    <div class="ms-auto">
+      <input id="search-input" type="text" class="form-control form-control-sm search-box" placeholder="Tìm kiếm…">
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if setups %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="main-table">
+        <thead>
+          <tr>
+            <th>Tên</th><th>WD (mm)</th><th>Lighting</th>
+            <th>Đã tính</th><th>Cập nhật</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in setups %}
+          <tr id="row-{{ s.id }}">
+            <td><a href="/vision-setups/{{ s.id }}" class="fw-semibold text-decoration-none">{{ s.name }}</a></td>
+            <td>{{ s.working_distance }}</td>
+            <td>{{ s.lighting_type or '–' }}</td>
+            <td>
+              {% if s.results %}
+              <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã tính</span>
+              {% else %}
+              <span class="badge bg-secondary">Chưa tính</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ s.updated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td class="text-end">
+              <a href="/vision-setups/{{ s.id }}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-eye"></i></a>
+              <a href="/vision-setups/{{ s.id }}/edit" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></a>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteSetup('{{ s.id }}','{{ s.name }}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-sliders fs-1 d-block mb-2"></i>
+      Chưa có Vision Setup nào. <a href="/vision-setups/new">Tạo ngay</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

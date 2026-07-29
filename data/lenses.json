@@ -1,0 +1,27 @@
+[
+  {
+    "name": "HT-FA3502D 35mm, F1.4, 2/3\", 5MP Lens, C-Mount",
+    "manufacturer": "Huateng",
+    "model": "HT-FA3502D",
+    "focal_length": 35.0,
+    "magnification": null,
+    "working_distance": null,
+    "aperture": 1.4,
+    "distortion": -0.8,
+    "mtf10": null,
+    "mtf30": null,
+    "mtf50": null,
+    "is_telecentric": true,
+    "telecentric_angle": null,
+    "image_circle": null,
+    "mount": "C-Mount",
+    "focus_type": "Manual",
+    "min_working_distance": null,
+    "max_working_distance": null,
+    "weight": 80.0,
+    "notes": "Lens",
+    "id": "2536866a-59bf-41a1-9c37-d490c7a07f76",
+    "created_at": "2026-07-29T23:20:21.074438",
+    "updated_at": "2026-07-29T23:23:41.566531"
+  }
+]

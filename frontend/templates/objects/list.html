@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Object – MV Calculator{% endblock %}
+{% block page_title %}Object{% endblock %}
+
+{% block topbar_actions %}
+<a href="/objects/new" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Thêm Object</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-box-seam me-1"></i> Danh sách Object
+    <div class="ms-auto">
+      <input id="search-input" type="text" class="form-control form-control-sm search-box" placeholder="Tìm kiếm…">
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if objects %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="main-table">
+        <thead>
+          <tr>
+            <th>Tên</th><th>W×H (mm)</th><th>Speed (mm/s)</th>
+            <th>Min Defect (mm)</th><th>Accuracy (mm)</th>
+            <th>Reflectivity (%)</th><th>Màu sắc</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in objects %}
+          <tr id="row-{{ o.id }}">
+            <td class="fw-semibold">{{ o.name }}</td>
+            <td>{{ o.width or '–' }}×{{ o.height or '–' }}</td>
+            <td>{{ o.speed or '–' }}</td>
+            <td>{{ o.min_defect_size or '–' }}</td>
+            <td>{{ o.required_accuracy or '–' }}</td>
+            <td>{{ o.reflectivity or '–' }}</td>
+            <td>{{ o.color or '–' }}</td>
+            <td class="text-end">
+              <a href="/objects/{{ o.id }}/edit" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></a>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteObject('{{ o.id }}','{{ o.name }}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+      Chưa có object nào. <a href="/objects/new">Thêm object đầu tiên</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

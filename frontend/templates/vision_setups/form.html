@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% set is_edit = setup is not none %}
+{% block title %}{{ 'Sửa' if is_edit else 'Tạo' }} Vision Setup – MV Calculator{% endblock %}
+{% block page_title %}{{ 'Sửa Vision Setup' if is_edit else 'Tạo Vision Setup' }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="/vision-setups" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+{% endblock %}
+
+{% macro field(id, label, type="text", unit="", placeholder="", value="") %}
+<div class="col-md-4">
+  <label for="{{ id }}" class="form-label small fw-semibold">{{ label }}{% if unit %} <span class="text-muted">({{ unit }})</span>{% endif %}</label>
+  <input type="{{ type }}" class="form-control form-control-sm" id="{{ id }}" name="{{ id }}"
+    placeholder="{{ placeholder }}" value="{{ value if value is not none else '' }}">
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form id="setup-form">
+      <!-- Tên -->
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-info-circle me-1"></i>Thông tin</h6>
+      <div class="row g-3 mb-4">
+        {{ field("name", "Tên Setup *", value=setup.name if setup else "") }}
+      </div>
+
+      <hr>
+      <!-- Chọn thiết bị -->
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-hdd-stack me-1"></i>Chọn thiết bị</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <label for="camera_id" class="form-label small fw-semibold">Camera *</label>
+          <select class="form-select form-select-sm" id="camera_id" name="camera_id">
+            <option value="">– Chọn Camera –</option>
+            {% for c in cameras %}
+            <option value="{{ c.id }}" {% if setup and setup.camera_id == c.id %}selected{% endif %}>
+              {{ c.name }} {% if c.manufacturer %}({{ c.manufacturer }}){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="lens_id" class="form-label small fw-semibold">Lens *</label>
+          <select class="form-select form-select-sm" id="lens_id" name="lens_id">
+            <option value="">– Chọn Lens –</option>
+            {% for l in lenses %}
+            <option value="{{ l.id }}" {% if setup and setup.lens_id == l.id %}selected{% endif %}>
+              {{ l.name }} {% if l.focal_length %}({{ l.focal_length }}mm){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="object_id" class="form-label small fw-semibold">Object *</label>
+          <select class="form-select form-select-sm" id="object_id" name="object_id">
+            <option value="">– Chọn Object –</option>
+            {% for o in objects %}
+            <option value="{{ o.id }}" {% if setup and setup.object_id == o.id %}selected{% endif %}>
+              {{ o.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <hr>
+      <!-- Thông số setup -->
+      <h6 class="text-muted text-uppercase small fw-bold mb-3"><i class="bi bi-sliders me-1"></i>Thông số Setup</h6>
+      <div class="row g-3 mb-4">
+        {{ field("working_distance",  "Working Distance *", "number","mm",  "e.g. 300",  setup.working_distance  if setup else "") }}
+        {{ field("lighting_distance", "Lighting Distance",  "number","mm",  "e.g. 200",  setup.lighting_distance if setup else "") }}
+        {{ field("lighting_angle",    "Lighting Angle",     "number","°",   "e.g. 45",   setup.lighting_angle    if setup else "") }}
+        <div class="col-md-4">
+          <label for="lighting_type" class="form-label small fw-semibold">Lighting Type</label>
+          <select class="form-select form-select-sm" id="lighting_type" name="lighting_type">
+            <option value="">– Chọn –</option>
+            {% for opt in ["Ring","Bar","Coaxial","Dome","Backlight","Spot","Strobe","Diffuse"] %}
+            <option {% if setup and setup.lighting_type == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {{ field("camera_tilt",   "Camera Tilt",   "number","°",    "e.g. 0",   setup.camera_tilt  if setup else "") }}
+        {{ field("object_tilt",   "Object Tilt",   "number","°",    "e.g. 0",   setup.object_tilt  if setup else "") }}
+        {{ field("ambient_light", "Ambient Light", "number","lux",  "e.g. 200", setup.ambient_light if setup else "") }}
+        <div class="col-md-8">
+          <label for="notes" class="form-label small fw-semibold">Ghi chú</label>
+          <input type="text" class="form-control form-control-sm" id="notes" name="notes"
+            value="{{ setup.notes if setup else '' }}">
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" onclick="saveSetup('{{ setup.id if setup else '' }}')">
+          <i class="bi bi-check-lg me-1"></i>{{ 'Cập nhật' if is_edit else 'Tạo Setup' }}
+        </button>
+        <a href="/vision-setups" class="btn btn-outline-secondary">Huỷ</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
