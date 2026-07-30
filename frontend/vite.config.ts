@@ -11,6 +11,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      'info.orivexus.com',
+      'orivexus.com',
+    ],
     proxy: {
       '/api': {
         target: 'http://backend:9999',
