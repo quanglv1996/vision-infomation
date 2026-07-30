@@ -6,20 +6,20 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "9999:9999"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
       - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 9999 --reload
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "5555:5555"
     environment:
-      - VITE_API_BASE_URL=http://backend:8000
+      - VITE_API_BASE_URL=http://backend:9999
     depends_on:
       - backend
