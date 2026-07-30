@@ -17,7 +17,5 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
-    environment:
-      - VITE_BACKEND_URL=http://backend:9999
     depends_on:
       - backend
