@@ -4,7 +4,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "9999:9999"
+      - "0.0.0.0:9999:9999"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
@@ -16,8 +16,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5555:5555"
+      - "0.0.0.0:5555:5555"
     environment:
-      - VITE_API_BASE_URL=http://backend:9999
+      - VITE_API_BASE_URL=/api
     depends_on:
       - backend
