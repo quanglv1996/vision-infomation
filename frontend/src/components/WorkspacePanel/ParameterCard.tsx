@@ -110,12 +110,18 @@ const ParameterCard: React.FC<ParameterCardProps> = ({ param, state }) => {
       {/* Input or value display */}
       {status === 'input' ? (
         <TextField
+          type="number"
           value={state.value ?? ''}
           onChange={handleChange}
           onClick={e => e.stopPropagation()}
           size="small"
           fullWidth
           placeholder="Enter value…"
+          inputProps={{
+            step: 'any',
+            min: param.min_value ?? undefined,
+            max: param.max_value ?? undefined,
+          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               bgcolor: 'rgba(59,130,246,0.06)',
@@ -132,12 +138,18 @@ const ParameterCard: React.FC<ParameterCardProps> = ({ param, state }) => {
         />
       ) : status === 'unknown' || status === 'missing' ? (
         <TextField
+          type="number"
           value=""
           onChange={handleChange}
           onClick={e => e.stopPropagation()}
           size="small"
           fullWidth
           placeholder={status === 'missing' ? '⚠ Required' : 'Enter value…'}
+          inputProps={{
+            step: 'any',
+            min: param.min_value ?? undefined,
+            max: param.max_value ?? undefined,
+          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               bgcolor: status === 'missing' ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
