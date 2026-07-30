@@ -85,7 +85,7 @@ const App: React.FC = () => {
         }}
       >
         <Typography color="error">
-          Failed to load parameter definitions. Is the backend running on port 8000?
+          Failed to load parameter definitions. Is the backend running on port 9999?
         </Typography>
       </Box>
     )

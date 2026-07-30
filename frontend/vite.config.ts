@@ -10,10 +10,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5555,
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:9999',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:9999',
         changeOrigin: true,
       },
     },

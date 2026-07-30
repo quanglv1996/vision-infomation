@@ -27,8 +27,8 @@ Frontend (React + TypeScript + Vite + MUI)
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-# API docs: http://localhost:8000/api/docs
+uvicorn main:app --reload --port 9999
+# API docs: http://localhost:9999/api/docs
 ```
 
 ### Frontend
@@ -191,7 +191,7 @@ Edit `backend/catalog/cameras.json` or `lenses.json`.
 | POST | `/api/projects` | Save project |
 | GET | `/api/projects/{id}` | Load project |
 
-Interactive docs: **http://localhost:8000/api/docs**
+Interactive docs: **http://localhost:9999/api/docs**
 
 ---
 
