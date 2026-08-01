@@ -7,6 +7,7 @@ import {
   CenterFocusStrong as CalibIcon,
   Palette as ColorIcon,
   FactCheck as ValidIcon,
+  CompareArrows as CompareIcon,
 } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
@@ -22,6 +23,7 @@ import ImageQuality from '@/components/ImageQuality'
 import GeometricCalibration from '@/components/GeometricCalibration'
 import ColorCalibration from '@/components/ColorCalibration'
 import ValidationModule from '@/components/ValidationModule'
+import ImageComparison from '@/components/ImageComparison'
 
 const ResizeHandle: React.FC = () => (
   <PanelResizeHandle>
@@ -55,7 +57,7 @@ const HResizeHandle: React.FC = () => (
 
 const App: React.FC = () => {
   const setParameterGroups = useCalcStore(s => s.setParameterGroups)
-  const [module, setModule] = useState<'calculator' | 'lighting' | 'quality' | 'geocal' | 'color' | 'validation'>('calculator')
+  const [module, setModule] = useState<'calculator' | 'lighting' | 'quality' | 'geocal' | 'color' | 'validation' | 'comparison'>('calculator')
 
   const { data: groups, isLoading, error } = useQuery({
     queryKey: ['parameter-groups'],
@@ -122,12 +124,13 @@ const App: React.FC = () => {
           onChange={(_, v) => setModule(v)}
           sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, fontSize: '0.78rem', py: 0.5 } }}
         >
-          <Tab value="calculator" label="Calculator"           icon={<CalcIcon   sx={{ fontSize: 16 }} />} iconPosition="start" />
-          <Tab value="lighting"   label="Lighting Calib."     icon={<LightIcon  sx={{ fontSize: 16 }} />} iconPosition="start" />
+          <Tab value="calculator" label="Calculator"           icon={<CalcIcon    sx={{ fontSize: 16 }} />} iconPosition="start" />
+          <Tab value="lighting"   label="Lighting Calib."     icon={<LightIcon   sx={{ fontSize: 16 }} />} iconPosition="start" />
           <Tab value="quality"    label="Image Quality"       icon={<QualityIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
-          <Tab value="geocal"     label="Geometric Calib."   icon={<CalibIcon  sx={{ fontSize: 16 }} />} iconPosition="start" />
-          <Tab value="color"      label="Color Calib."       icon={<ColorIcon  sx={{ fontSize: 16 }} />} iconPosition="start" />
-          <Tab value="validation" label="Validation"         icon={<ValidIcon  sx={{ fontSize: 16 }} />} iconPosition="start" />
+          <Tab value="geocal"     label="Geometric Calib."   icon={<CalibIcon   sx={{ fontSize: 16 }} />} iconPosition="start" />
+          <Tab value="color"      label="Color Calib."       icon={<ColorIcon   sx={{ fontSize: 16 }} />} iconPosition="start" />
+          <Tab value="validation" label="Validation"         icon={<ValidIcon   sx={{ fontSize: 16 }} />} iconPosition="start" />
+          <Tab value="comparison" label="Image Compare"      icon={<CompareIcon sx={{ fontSize: 16 }} />} iconPosition="start" />
         </Tabs>
       </Box>
 
@@ -193,6 +196,13 @@ const App: React.FC = () => {
       {module === 'validation' && (
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <ValidationModule />
+        </Box>
+      )}
+
+      {/* Image comparison module */}
+      {module === 'comparison' && (
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <ImageComparison />
         </Box>
       )}
     </Box>

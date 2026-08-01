@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from app.api.endpoints.calculate import router as calculate_router
 from app.api.endpoints.color_calibration import router as color_router
 from app.api.endpoints.geometric_calibration import router as geocal_router
+from app.api.endpoints.image_comparison import router as comparison_router
 from app.api.endpoints.image_quality import router as quality_router
 from app.api.endpoints.lighting import router as lighting_router
 from app.api.endpoints.parameters import router as params_router
@@ -24,3 +25,4 @@ api_router.include_router(quality_router)
 api_router.include_router(geocal_router)
 api_router.include_router(color_router)
 api_router.include_router(validation_router)
+api_router.include_router(comparison_router)
