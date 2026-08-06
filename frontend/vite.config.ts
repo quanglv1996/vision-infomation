@@ -14,8 +14,7 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       '127.0.0.1',
-      'info.orivexus.com',
-      'orivexus.com',
+      '.orivexus.com',
     ],
     proxy: {
       '/api': {

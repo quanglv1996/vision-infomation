@@ -38,13 +38,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
+        "http://localhost",
         "http://localhost:3000",
-        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1",
         "http://127.0.0.1:3000",
-        "https://info.orivexus.com",
-        "https://*.orivexus.com",
+        "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"https://.*\.orivexus\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
