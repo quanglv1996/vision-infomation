@@ -1,19 +1,13 @@
 import React from 'react'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import type { UniformityResult } from '@/types/lighting'
-import HeatmapCanvas from './HeatmapCanvas'
-
-const STATUS_COLORS: Record<string, string> = {
-  excellent: '#10B981',
-  good: '#3B82F6',
-  acceptable: '#F59E0B',
-  bad: '#EF4444',
-}
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
+import { GRADE_COLORS, statusColor } from '@/theme/status'
 
 interface Props { uniformity: UniformityResult }
 
 const UniformityPanel: React.FC<Props> = ({ uniformity }) => {
-  const color = STATUS_COLORS[uniformity.status] ?? '#94a3b8'
+  const color = statusColor(GRADE_COLORS, uniformity.status, '#94a3b8')
 
   const criteria = [
     { label: 'Excellent', range: '≥ 95%',  color: '#10B981' },

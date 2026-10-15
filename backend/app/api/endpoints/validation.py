@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from app.api.deps import service_errors
 from app.schemas.validation import ValidationRequest, ValidationResult
 from app.services.validation_service import run_validation
 
@@ -18,7 +19,6 @@ async def analyze_validation(req: ValidationRequest):
     ])
     if not has_data:
         raise HTTPException(status_code=400, detail="At least one validation module must have data")
-    try:
+
+    with service_errors("Validation error"):
         return run_validation(req)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Validation error: {exc}") from exc

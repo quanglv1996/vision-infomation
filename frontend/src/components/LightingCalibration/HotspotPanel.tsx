@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import type { HotspotResult } from '@/types/lighting'
-import HeatmapCanvas from './HeatmapCanvas'
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
 
 interface Props { hotspots: HotspotResult }
 

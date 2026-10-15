@@ -12,6 +12,7 @@ import HeatmapGrid     from './HeatmapGrid'
 import DiffPanel       from './DiffPanel'
 import { analyzeComparison } from '@/services/imageComparisonApi'
 import type { ComparisonResult, ComparisonWeights, ImageItem } from '@/types/imageComparison'
+import { errorMessage } from '@/services/http'
 
 const COLORS = [
   '#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6',
@@ -33,8 +34,7 @@ const ImageComparison: React.FC = () => {
       setCollapsed(true)
       setTab(0)
     } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(detail ?? 'Comparison failed. Check images and try again.')
+      setError(errorMessage(e, 'Comparison failed. Check images and try again.'))
     } finally {
       setLoading(false)
     }

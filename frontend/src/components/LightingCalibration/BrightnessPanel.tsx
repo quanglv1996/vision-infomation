@@ -4,13 +4,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import type { BrightnessStats } from '@/types/lighting'
-
-const STATUS_COLOR = { pass: '#10B981', warning: '#F59E0B', fail: '#EF4444' }
+import { PASS_FAIL_COLORS, statusColor } from '@/theme/status'
 
 interface Props { brightness: BrightnessStats; maxVal: number }
 
 const BrightnessPanel: React.FC<Props> = ({ brightness, maxVal }) => {
-  const color = STATUS_COLOR[brightness.status]
+  const color = statusColor(PASS_FAIL_COLORS, brightness.status)
 
   const stats = [
     { label: 'Mean',   value: brightness.mean.toFixed(1) },

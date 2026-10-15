@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 from numpy import fft
 
+from app.core import imaging
 from app.schemas.lighting import (
     BrightnessStats,
     DynamicRangeResult,
@@ -20,41 +21,6 @@ from app.schemas.lighting import (
     SNRResult,
     UniformityResult,
 )
-
-
-# ── helpers ───────────────────────────────────────────────────────────────────
-
-def _to_gray(img: np.ndarray) -> np.ndarray:
-    if img.ndim == 3 and img.shape[2] == 4:
-        return cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-    if img.ndim == 3:
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return img
-
-
-def _detect_bit_depth(img: np.ndarray) -> int:
-    if img.dtype == np.uint16:
-        return 16
-    if img.dtype == np.uint32:
-        return 32
-    return 8
-
-
-def _downsample(data: np.ndarray, max_size: int = 64) -> tuple[list[list[float]], int, int]:
-    data = data.astype(np.float32)
-    h, w = data.shape
-    if h > max_size or w > max_size:
-        scale = max_size / max(h, w)
-        nw = max(1, int(w * scale))
-        nh = max(1, int(h * scale))
-        data = cv2.resize(data, (nw, nh), interpolation=cv2.INTER_AREA)
-    return data.tolist(), int(data.shape[0]), int(data.shape[1])
-
-
-def _safe_kernel(size: int, img_h: int, img_w: int) -> int:
-    """Return odd kernel size ≤ image dimensions."""
-    k = min(size, img_h, img_w)
-    return k if k % 2 == 1 else max(1, k - 1)
 
 
 # ── analysis modules ──────────────────────────────────────────────────────────
@@ -126,7 +92,7 @@ def analyze_uniformity(gray_imgs: list[np.ndarray]) -> UniformityResult:
     else:
         status = "bad"
 
-    hmap, rows, cols = _downsample(mean_img)
+    hmap, rows, cols = imaging.downsample(mean_img)
     return UniformityResult(
         uniformity_min_max=round(u_mm, 2),
         uniformity_cv=round(u_cv, 2),
@@ -142,7 +108,7 @@ def analyze_hotspots(gray_imgs: list[np.ndarray], max_val: float) -> HotspotResu
     norm = (mean_img / max_val).astype(np.float32)
     h, w = norm.shape
 
-    k = _safe_kernel(21, h, w)
+    k = imaging.safe_kernel(21, h, w)
     blurred = cv2.GaussianBlur(norm, (k, k), 0)
 
     mean_v = float(np.mean(norm))
@@ -150,7 +116,7 @@ def analyze_hotspots(gray_imgs: list[np.ndarray], max_val: float) -> HotspotResu
     hotspots: list[HotspotInfo] = []
 
     def _find_blobs(mask: np.ndarray, blob_type: str, base_val: float, nmax: int = 5):
-        k2 = _safe_kernel(5, h, w)
+        k2 = imaging.safe_kernel(5, h, w)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((k2, k2), np.uint8))
         cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in cnts[:nmax]:
@@ -166,7 +132,7 @@ def analyze_hotspots(gray_imgs: list[np.ndarray], max_val: float) -> HotspotResu
     _find_blobs((norm < shadow_thresh).astype(np.uint8), "shadow", mean_v)
 
     severity_score = round(float(np.mean([h_.severity for h_ in hotspots])), 3) if hotspots else 0.0
-    hmap, rows, cols = _downsample(norm)
+    hmap, rows, cols = imaging.downsample(norm)
 
     return HotspotResult(
         hotspots=hotspots,
@@ -181,7 +147,7 @@ def analyze_noise(gray_imgs: list[np.ndarray]) -> tuple[NoiseResult, SNRResult]:
     arr = np.stack(gray_imgs, axis=0).astype(np.float64)
     mean_img = np.mean(arr, axis=0)
     h, w = mean_img.shape
-    k = _safe_kernel(5, h, w)
+    k = imaging.safe_kernel(5, h, w)
     blurred = cv2.GaussianBlur(mean_img.astype(np.float32), (k, k), 0).astype(np.float64)
     spatial_noise = np.abs(mean_img - blurred)
 
@@ -202,7 +168,7 @@ def analyze_noise(gray_imgs: list[np.ndarray]) -> tuple[NoiseResult, SNRResult]:
 
     snr_status = "excellent" if snr_db >= 40 else ("good" if snr_db >= 25 else "poor")
 
-    nm_data, nm_rows, nm_cols = _downsample(noise_map_arr)
+    nm_data, nm_rows, nm_cols = imaging.downsample(noise_map_arr)
 
     return (
         NoiseResult(
@@ -262,8 +228,8 @@ def analyze_dynamic_range(
     if dark_frame is None or white_ref is None:
         return None
 
-    dark = _to_gray(dark_frame).astype(np.float64)
-    white = _to_gray(white_ref).astype(np.float64)
+    dark = imaging.to_gray(dark_frame).astype(np.float64)
+    white = imaging.to_gray(white_ref).astype(np.float64)
     noise_floor = max(float(np.std(dark)), 1e-6)
     signal_mean = float(np.mean(white)) - float(np.mean(dark))
 
@@ -363,15 +329,15 @@ def run_analysis(
         for img in sequence
     ]
 
-    bit_depth = _detect_bit_depth(sequence[0])
+    bit_depth = imaging.bit_depth(sequence[0])
     max_val = float(2 ** bit_depth - 1)
 
     # Convert to grayscale float64
-    gray_imgs: list[np.ndarray] = [_to_gray(img).astype(np.float64) for img in sequence]
+    gray_imgs: list[np.ndarray] = [imaging.to_gray(img).astype(np.float64) for img in sequence]
 
     # Dark frame subtraction
     if dark_frame is not None:
-        dark_gray = _to_gray(dark_frame).astype(np.float64)
+        dark_gray = imaging.to_gray(dark_frame).astype(np.float64)
         if dark_gray.shape != (target_h, target_w):
             dark_gray = cv2.resize(dark_gray.astype(np.float32), (target_w, target_h)).astype(np.float64)
         gray_imgs = [np.clip(g - dark_gray, 0, max_val) for g in gray_imgs]

@@ -22,6 +22,7 @@ import NoisePanel from './NoisePanel'
 import FlickerPanel from './FlickerPanel'
 import DynamicRangePanel from './DynamicRangePanel'
 import RecommendationsPanel from './RecommendationsPanel'
+import { errorMessage } from '@/services/http'
 
 const TABS = [
   { label: 'Brightness',     key: 'brightness' },
@@ -121,7 +122,7 @@ const LightingCalibration: React.FC = () => {
         {/* Error */}
         {error && !isPending && (
           <Alert severity="error">
-            {error.message || 'Analysis failed — check backend logs'}
+            {errorMessage(error, 'Analysis failed — check backend logs')}
           </Alert>
         )}
 

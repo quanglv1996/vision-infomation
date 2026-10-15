@@ -1,7 +1,5 @@
-import axios from 'axios'
+import { postForm } from './http'
 import type { ColorCalibrationResult } from '@/types/colorCalibration'
-
-const client = axios.create({ baseURL: '/api' })
 
 export const analyzeColor = (
   image: File,
@@ -10,9 +8,5 @@ export const analyzeColor = (
   const form = new FormData()
   form.append('image', image)
   form.append('image_type', imageType)
-  return client
-    .post<ColorCalibrationResult>('/color/analyze', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then(r => r.data)
+  return postForm<ColorCalibrationResult>('/color/analyze', form)
 }

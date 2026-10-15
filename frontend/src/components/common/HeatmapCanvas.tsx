@@ -1,6 +1,10 @@
 import React, { useRef, useEffect } from 'react'
 import { Box } from '@mui/material'
 
+/**
+ * Renders a 2-D numeric map (e.g. a backend `downsample()` result) as a
+ * min/max-normalised jet-colormap image, upscaled with smoothing.
+ */
 interface Props {
   data: number[][]
   rows: number
@@ -9,7 +13,7 @@ interface Props {
   height?: number
 }
 
-function jetColor(t: number): [number, number, number] {
+export function jetColor(t: number): [number, number, number] {
   const c = (v: number) => Math.max(0, Math.min(1, v))
   return [
     Math.round(c(1.5 - Math.abs(4 * t - 3)) * 255),
@@ -18,16 +22,19 @@ function jetColor(t: number): [number, number, number] {
   ]
 }
 
-const HeatmapCanvas: React.FC<Props> = ({ data, rows, cols, width = 300, height = 200 }) => {
+const HeatmapCanvas: React.FC<Props> = ({ data, rows, cols, width = 320, height = 200 }) => {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const canvas = ref.current
     if (!canvas || !data.length) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
     let mn = Infinity, mx = -Infinity
     for (const row of data) for (const v of row) { if (v < mn) mn = v; if (v > mx) mx = v }
     const range = mx - mn || 1
+
     const img = ctx.createImageData(cols, rows)
     let i = 0
     for (let r = 0; r < rows; r++)
@@ -35,9 +42,11 @@ const HeatmapCanvas: React.FC<Props> = ({ data, rows, cols, width = 300, height 
         const [R, G, B] = jetColor(((data[r]?.[c] ?? 0) - mn) / range)
         img.data[i++] = R; img.data[i++] = G; img.data[i++] = B; img.data[i++] = 255
       }
+
     const tmp = document.createElement('canvas')
     tmp.width = cols; tmp.height = rows
     tmp.getContext('2d')!.putImageData(img, 0, 0)
+
     canvas.width = width; canvas.height = height
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
@@ -46,7 +55,7 @@ const HeatmapCanvas: React.FC<Props> = ({ data, rows, cols, width = 300, height 
 
   return (
     <Box sx={{ borderRadius: 1, overflow: 'hidden', display: 'inline-block' }}>
-      <canvas ref={ref} style={{ display: 'block' }} />
+      <canvas ref={ref} width={width} height={height} style={{ display: 'block' }} />
     </Box>
   )
 }

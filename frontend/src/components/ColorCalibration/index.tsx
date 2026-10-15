@@ -16,6 +16,7 @@ import ColorCheckerPanel from './ColorCheckerPanel'
 import ColorReportPanel  from './ReportPanel'
 import { analyzeColor }  from '@/services/colorCalibrationApi'
 import type { ColorCalibrationResult } from '@/types/colorCalibration'
+import { errorMessage } from '@/services/http'
 
 const TYPE_LABEL: Record<string, string> = {
   white_card: 'White Card', gray_card: 'Gray Card',
@@ -37,8 +38,7 @@ const ColorCalibration: React.FC = () => {
       setCollapsed(true)
       setTab(0)
     } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(detail ?? 'Analysis failed.')
+      setError(errorMessage(e, 'Analysis failed.'))
     } finally {
       setLoading(false)
     }

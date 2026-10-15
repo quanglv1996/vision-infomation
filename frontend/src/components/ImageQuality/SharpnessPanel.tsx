@@ -1,16 +1,17 @@
 import React from 'react'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import type { SharpnessResult } from '@/types/imageQuality'
-import HeatmapCanvas from '../LightingCalibration/HeatmapCanvas'
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
+import { TONE, statusColor, type StatusColorMap } from '@/theme/status'
 
-const STATUS_COLOR: Record<string, string> = {
-  sharp: '#10B981', acceptable: '#F59E0B', blurry: '#EF4444',
+const SHARPNESS_COLORS: StatusColorMap = {
+  sharp: TONE.success, acceptable: TONE.warning, blurry: TONE.error,
 }
 
 interface Props { sharpness: SharpnessResult }
 
 const SharpnessPanel: React.FC<Props> = ({ sharpness }) => {
-  const color = STATUS_COLOR[sharpness.status] ?? '#94a3b8'
+  const color = statusColor(SHARPNESS_COLORS, sharpness.status, '#94a3b8')
 
   const metrics = [
     { label: 'Laplacian Variance', value: sharpness.laplacian_variance.toFixed(1), tip: '>1000 = sharp' },

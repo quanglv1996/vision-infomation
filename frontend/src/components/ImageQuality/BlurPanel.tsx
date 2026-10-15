@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import type { BlurResult } from '@/types/imageQuality'
-import HeatmapCanvas from '../LightingCalibration/HeatmapCanvas'
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
 
 const TYPE_COLOR: Record<string, string> = {
   none: '#10B981', slight: '#3B82F6', moderate: '#F59E0B',

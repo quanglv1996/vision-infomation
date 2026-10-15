@@ -7,19 +7,13 @@ from typing import Optional
 import cv2
 import numpy as np
 
+from app.core import imaging
 from app.schemas.image_comparison import (
     ComparisonResult, DiffResult, ImageMetrics,
 )
 
+
 # ── helpers ────────────────────────────────────────────────────────────────────
-
-def _to_gray(img: np.ndarray) -> np.ndarray:
-    if img.ndim == 3 and img.shape[2] == 4:
-        return cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-    if img.ndim == 3:
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return img
-
 
 def _max_val(img: np.ndarray) -> float:
     return 65535.0 if img.dtype == np.uint16 else 255.0
@@ -32,16 +26,6 @@ def _normalize(values: list[float], higher_is_better: bool = True) -> list[float
     if higher_is_better:
         return [(v - mn) / (mx - mn) * 100 for v in values]
     return [(mx - v) / (mx - mn) * 100 for v in values]
-
-
-def _downsample_map(data: np.ndarray, max_side: int = 32) -> tuple[list[list[float]], int, int]:
-    data = data.astype(np.float32)
-    h, w = data.shape
-    if max(h, w) > max_side:
-        scale = max_side / max(h, w)
-        nw = max(1, int(w * scale)); nh = max(1, int(h * scale))
-        data = cv2.resize(data, (nw, nh), interpolation=cv2.INTER_AREA)
-    return [[float(v) for v in row] for row in data.tolist()], int(data.shape[0]), int(data.shape[1])
 
 
 def _focus_map(g: np.ndarray, block: int = 16) -> np.ndarray:
@@ -79,7 +63,7 @@ def _compute_metrics(
     name: str,
 ) -> dict:
     mv = _max_val(img_bgr)
-    gray = _to_gray(img_bgr)
+    gray = imaging.to_gray(img_bgr)
     h, w = gray.shape
     g = gray.astype(np.float64)
     is_color = img_bgr.ndim == 3 and img_bgr.shape[2] >= 3
@@ -162,10 +146,10 @@ def _compute_metrics(
 
     # ── Heatmaps ──
     fm_raw = _focus_map(g, block=max(8, min(32, min(h, w) // 8)))
-    fm_data, fm_rows, fm_cols = _downsample_map(fm_raw)
+    fm_data, fm_rows, fm_cols = imaging.downsample(fm_raw, max_side=32)
 
     nm_raw = _noise_map(g, block=max(8, min(32, min(h, w) // 8)))
-    nm_data, nm_rows, nm_cols = _downsample_map(nm_raw)
+    nm_data, nm_rows, nm_cols = imaging.downsample(nm_raw, max_side=32)
 
     return dict(
         index=index, name=name, width=int(w), height=int(h), is_color=is_color,
@@ -195,8 +179,8 @@ def _compute_diff(imgs: list[np.ndarray], idx1: int, idx2: int) -> DiffResult:
         img1 = img1[:h, :w] if img1.ndim == 2 else img1[:h, :w, :]
         img2 = img2[:h, :w] if img2.ndim == 2 else img2[:h, :w, :]
 
-    g1 = _to_gray(img1).astype(np.float64)
-    g2 = _to_gray(img2).astype(np.float64)
+    g1 = imaging.to_gray(img1).astype(np.float64)
+    g2 = imaging.to_gray(img2).astype(np.float64)
     mv = _max_val(img1)
 
     diff = np.abs(g1 - g2)
@@ -215,7 +199,7 @@ def _compute_diff(imgs: list[np.ndarray], idx1: int, idx2: int) -> DiffResult:
         s12 = float(np.cov(g1.flatten(), g2.flatten())[0, 1])
         ssim_val = round(((2*mu1*mu2+C1)*(2*s12+C2)) / ((mu1**2+mu2**2+C1)*(s1+s2+C2)), 4)
 
-    dm_data, dm_rows, dm_cols = _downsample_map(diff.astype(np.float32))
+    dm_data, dm_rows, dm_cols = imaging.downsample(diff.astype(np.float32), max_side=32)
     return DiffResult(
         img1_idx=idx1, img2_idx=idx2, mse=round(mse, 4), psnr=psnr, ssim=ssim_val,
         diff_map=dm_data, diff_map_rows=dm_rows, diff_map_cols=dm_cols,

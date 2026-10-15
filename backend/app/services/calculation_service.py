@@ -65,7 +65,7 @@ def run_analyze(req: AnalyzeRequest) -> AnalyzeResponse:
     calculated_set = {pid for pid, s in result.steps.items() if s.status != "input"}
     target_set = set(req.targets)
 
-    computable = list(calculated_set)
+    computable = sorted(calculated_set)
 
     graph_data = graph_to_json(PARAM_GRAPH, known_set, calculated_set, target_set)
 

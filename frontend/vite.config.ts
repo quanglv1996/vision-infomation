@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+// Where `/api` is proxied in dev. docker-compose sets this to http://backend:9999.
+const apiTarget = process.env.VITE_PROXY_TARGET ?? 'http://localhost:9999'
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -18,7 +21,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://backend:9999',
+        target: apiTarget,
         changeOrigin: true,
       },
     },

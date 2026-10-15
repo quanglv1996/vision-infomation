@@ -1,7 +1,5 @@
-import axios from 'axios'
+import { postForm } from './http'
 import type { LightingAnalysisResult } from '@/types/lighting'
-
-const client = axios.create({ baseURL: '/api' })
 
 export const analyzeLighting = (
   sequence: File[],
@@ -12,10 +10,5 @@ export const analyzeLighting = (
   sequence.forEach(f => form.append('sequence', f))
   if (whiteRef) form.append('white_ref', whiteRef)
   if (darkFrame) form.append('dark_frame', darkFrame)
-
-  return client
-    .post<LightingAnalysisResult>('/lighting/analyze', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then(r => r.data)
+  return postForm<LightingAnalysisResult>('/lighting/analyze', form)
 }

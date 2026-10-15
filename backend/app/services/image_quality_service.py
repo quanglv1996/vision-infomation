@@ -7,6 +7,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
+from app.core import imaging
 from app.schemas.image_quality import (
     ApplicationScores,
     BlurResult,
@@ -20,42 +21,6 @@ from app.schemas.image_quality import (
     SNRCNRResult,
     SharpnessResult,
 )
-
-
-# ── shared helpers ─────────────────────────────────────────────────────────────
-
-def _to_gray(img: np.ndarray) -> np.ndarray:
-    if img.ndim == 3 and img.shape[2] == 4:
-        return cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-    if img.ndim == 3:
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return img
-
-
-def _bit_depth(img: np.ndarray) -> int:
-    if img.dtype == np.uint16:
-        return 16
-    if img.dtype == np.uint32:
-        return 32
-    return 8
-
-
-def _safe_k(size: int, h: int, w: int) -> int:
-    k = min(size, h, w)
-    return k if k % 2 == 1 else max(1, k - 1)
-
-
-def _downsample(data: np.ndarray, max_side: int = 64) -> tuple[list[list[float]], int, int]:
-    data = data.astype(np.float32)
-    h, w = data.shape
-    if max(h, w) > max_side:
-        scale = max_side / max(h, w)
-        nw = max(1, int(w * scale))
-        nh = max(1, int(h * scale))
-        data = cv2.resize(data, (nw, nh), interpolation=cv2.INTER_AREA)
-    # Convert to Python float for JSON serialization
-    result = [[float(v) for v in row] for row in data.tolist()]
-    return result, int(data.shape[0]), int(data.shape[1])
 
 
 # ── component scores ───────────────────────────────────────────────────────────
@@ -94,7 +59,7 @@ def analyze_sharpness(gray: np.ndarray, max_val: float) -> SharpnessResult:
     lap_var = float(lap.var())
 
     # Tenengrad (Sobel energy mean)
-    ksize = _safe_k(3, h, w)
+    ksize = imaging.safe_kernel(3, h, w)
     gx = cv2.Sobel(g, cv2.CV_64F, 1, 0, ksize=ksize)
     gy = cv2.Sobel(g, cv2.CV_64F, 0, 1, ksize=ksize)
     tenengrad = float(np.mean(gx ** 2 + gy ** 2))
@@ -129,7 +94,7 @@ def analyze_sharpness(gray: np.ndarray, max_val: float) -> SharpnessResult:
             blk = g[r_i * block:(r_i + 1) * block, c_i * block:(c_i + 1) * block]
             lap_blk = cv2.Laplacian(blk, cv2.CV_64F)
             fmap[r_i, c_i] = float(lap_blk.var())
-    fm_data, fm_rows, fm_cols = _downsample(fmap)
+    fm_data, fm_rows, fm_cols = imaging.downsample(fmap)
 
     score = _lap_to_score(lap_var)
     status = "sharp" if lap_var >= 1000 else ("acceptable" if lap_var >= 100 else "blurry")
@@ -211,7 +176,7 @@ def analyze_blur(gray: np.ndarray, lap_var: float) -> BlurResult:
             lb = cv2.Laplacian(blk, cv2.CV_64F)
             bmap[ri, ci] = float(lb.var())
     bmap_inv = float(bmap.max() + 1) - bmap  # Invert: high = blurry
-    bm_data, bm_rows, bm_cols = _downsample(bmap_inv)
+    bm_data, bm_rows, bm_cols = imaging.downsample(bmap_inv)
 
     return BlurResult(
         blur_type=blur_type,
@@ -233,7 +198,7 @@ def analyze_noise_quality(
     h, w = g.shape
 
     # Gaussian noise estimation via smooth-region residual (MAD method)
-    k = _safe_k(5, h, w)
+    k = imaging.safe_kernel(5, h, w)
     blurred = cv2.GaussianBlur(g.astype(np.float32), (k, k), 0).astype(np.float64)
     residual = np.abs(g - blurred)
     mad = float(np.median(np.abs(residual - float(np.median(residual)))))
@@ -249,7 +214,7 @@ def analyze_noise_quality(
     score = round(_noise_to_score(estimated_std, max_val), 1)
 
     # Noise map
-    nm_data, nm_rows, nm_cols = _downsample(residual)
+    nm_data, nm_rows, nm_cols = imaging.downsample(residual)
 
     return NoiseQualityResult(
         estimated_std=round(estimated_std, 4),
@@ -274,7 +239,7 @@ def analyze_contrast(gray: np.ndarray, max_val: float) -> ContrastResult:
     rms = float(np.sqrt(np.mean((norm - mean) ** 2)))
 
     # Local contrast
-    k = _safe_k(7, h, w)
+    k = imaging.safe_kernel(7, h, w)
     blur = cv2.GaussianBlur(norm.astype(np.float32), (k, k), 0).astype(np.float64)
     local_c = float(np.mean(np.abs(norm - blur)))
 
@@ -529,9 +494,9 @@ def _generate_recommendations(
 
 def run_quality_analysis(images: list[np.ndarray]) -> ImageQualityResult:
     primary = images[0]
-    bit_depth_ = _bit_depth(primary)
+    bit_depth_ = imaging.bit_depth(primary)
     max_val = float(2 ** bit_depth_ - 1)
-    gray = _to_gray(primary)
+    gray = imaging.to_gray(primary)
     is_color = primary.ndim == 3 and primary.shape[2] >= 3
 
     sharpness = analyze_sharpness(gray, max_val)

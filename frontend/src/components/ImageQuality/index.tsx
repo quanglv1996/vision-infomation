@@ -17,6 +17,7 @@ import ContrastPanel from './ContrastPanel'
 import ColorPanel from './ColorPanel'
 import StatisticsPanel from './StatisticsPanel'
 import RecommendationsPanel from '../LightingCalibration/RecommendationsPanel'
+import { errorMessage } from '@/services/http'
 
 const TABS = [
   { label: 'Sharpness',         key: 'sharp' },
@@ -91,7 +92,7 @@ const ImageQuality: React.FC = () => {
         )}
 
         {error && !isPending && (
-          <Alert severity="error">{error.message || 'Analysis failed'}</Alert>
+          <Alert severity="error">{errorMessage(error, 'Analysis failed')}</Alert>
         )}
 
         {data && !isPending && (

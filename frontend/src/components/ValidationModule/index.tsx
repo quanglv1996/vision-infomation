@@ -15,6 +15,7 @@ import GRRPanel             from './GRRPanel'
 import ValidationReportPanel from './ReportPanel'
 import { runValidation }    from '@/services/validationApi'
 import type { ValidationRequest, ValidationResult } from '@/types/validation'
+import { errorMessage } from '@/services/http'
 
 const VERDICT_COLOR: Record<string, string> = {
   'PASS': '#10B981', 'CONDITIONAL PASS': '#F59E0B', 'FAIL': '#EF4444',
@@ -35,8 +36,7 @@ const ValidationModule: React.FC = () => {
       setCollapsed(true)
       setTab(0)
     } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(detail ?? 'Validation failed.')
+      setError(errorMessage(e, 'Validation failed.'))
     } finally {
       setLoading(false)
     }

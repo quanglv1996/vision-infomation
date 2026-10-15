@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Card, CardContent, Chip, Grid, LinearProgress, Stack, Typography } from '@mui/material'
-import HeatmapCanvas from './HeatmapCanvas'
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
 import type { GeometricCalibrationResult } from '@/types/geometricCalibration'
 
 interface Props { result: GeometricCalibrationResult }

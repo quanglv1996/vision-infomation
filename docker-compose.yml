@@ -18,6 +18,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
+    environment:
+      - VITE_PROXY_TARGET=http://backend:9999
     depends_on:
       - backend
     restart: unless-stopped

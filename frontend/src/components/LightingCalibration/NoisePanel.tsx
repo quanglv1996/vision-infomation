@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import type { NoiseResult, SNRResult } from '@/types/lighting'
-import HeatmapCanvas from './HeatmapCanvas'
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
 
 const SNR_COLOR: Record<string, string> = {
   excellent: '#10B981',

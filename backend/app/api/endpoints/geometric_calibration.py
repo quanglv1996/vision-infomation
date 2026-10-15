@@ -3,22 +3,13 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-import cv2
-import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
+from app.api.deps import read_images, service_errors
 from app.schemas.geometric_calibration import GeometricCalibrationResult
 from app.services.geometric_calibration_service import run_geometric_calibration
 
 router = APIRouter(prefix="/calibration", tags=["calibration"])
-
-
-def _decode(data: bytes, name: str) -> np.ndarray:
-    arr = np.frombuffer(data, dtype=np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_UNCHANGED)
-    if img is None:
-        raise HTTPException(status_code=422, detail=f"Cannot decode image: {name}")
-    return img
 
 
 @router.post("/geometric", response_model=GeometricCalibrationResult)
@@ -37,13 +28,11 @@ async def geometric_calibration(
     if not images:
         raise HTTPException(status_code=400, detail="At least 3 calibration images are required")
 
-    decoded: list[np.ndarray] = []
-    for f in images:
-        data = await f.read()
-        decoded.append(_decode(data, f.filename or ""))
+    decoded = await read_images(images)
 
-    try:
-        result = run_geometric_calibration(
+    # ValueError = not enough usable views / pattern not found → client error
+    with service_errors("Calibration failed", client_errors=(ValueError,)):
+        return run_geometric_calibration(
             images=decoded,
             pattern_type=pattern_type,
             board_cols=board_cols,
@@ -52,9 +41,3 @@ async def geometric_calibration(
             sensor_width_mm=sensor_width_mm,
             working_distance_mm=working_distance_mm,
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Calibration failed: {exc}") from exc
-
-    return result

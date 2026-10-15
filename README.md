@@ -227,8 +227,13 @@ vision-information/
 │   ├── app/
 │   │   ├── __init__.py
 │   │   │
+│   │   ├── core/                     # Dùng chung toàn backend
+│   │   │   ├── config.py             # Settings (env prefix MVC_)
+│   │   │   └── imaging.py            # Helper ảnh: decode, to_gray, downsample...
+│   │   │
 │   │   ├── api/                      # API routes
-│   │   │   ├── router.py             # Main router
+│   │   │   ├── router.py             # Main router (danh sách _MODULES)
+│   │   │   ├── deps.py               # Đọc ảnh upload + map lỗi service → HTTP
 │   │   │   └── endpoints/            # API endpoints
 │   │   │       ├── calculate.py      # Calculation endpoint
 │   │   │       ├── color_calibration.py
@@ -249,17 +254,19 @@ vision-information/
 │   │   │   ├── image_quality.py
 │   │   │   ├── lighting.py
 │   │   │   ├── parameter.py
+│   │   │   ├── project.py
 │   │   │   ├── recommendation.py
 │   │   │   └── validation.py
 │   │   │
 │   │   └── services/                 # Business logic
 │   │       ├── calculation_service.py
+│   │       ├── catalog.py            # Load + cache catalog JSON
 │   │       ├── color_calibration_service.py
 │   │       ├── geometric_calibration_service.py
 │   │       ├── image_comparison_service.py
 │   │       ├── image_quality_service.py
 │   │       ├── lighting_service.py
-│   │       ├── project_service.py
+│   │       ├── project_service.py    # ProjectRepository (in-memory)
 │   │       ├── recommendation_service.py
 │   │       └── validation_service.py
 │   │
@@ -280,6 +287,7 @@ vision-information/
 │   │   └── lenses.json               # Lens specifications
 │   │
 │   └── tests/                        # Unit tests
+│       ├── test_api.py               # Smoke test mọi endpoint
 │       ├── test_engine.py
 │       └── test_formulas.py
 │
@@ -292,7 +300,8 @@ vision-information/
 │   │
 │   └── src/
 │       ├── main.tsx                  # React entry
-│       ├── App.tsx                   # Main app component
+│       ├── App.tsx                   # Main app component (tab bar)
+│       ├── modules.tsx               # Registry các module/tab
 │       │
 │       ├── components/               # React components
 │       │   ├── ColorCalibration/     # Color calibration module
@@ -307,8 +316,9 @@ vision-information/
 │       │   ├── ImageComparison/
 │       │   ├── ImageQuality/
 │       │   ├── LightingCalibration/
-│       │   ├── SharpnessAnalyzer/
 │       │   │
+│       │   ├── CalculatorModule/     # Layout của tab Calculator
+│       │   ├── common/               # Component dùng chung (HeatmapCanvas)
 │       │   ├── DependencyGraph/      # Dependency visualization
 │       │   ├── DetailsPanel/         # Results display
 │       │   ├── ParameterPanel/       # Input parameters
@@ -319,7 +329,8 @@ vision-information/
 │       │   └── WorkspacePanel/       # Project management
 │       │
 │       ├── services/                 # API services
-│       │   ├── api.ts                # Base API client
+│       │   ├── http.ts               # Axios client dùng chung + errorMessage
+│       │   ├── api.ts                # Calculator / projects / recommend
 │       │   ├── colorCalibrationApi.ts
 │       │   ├── geometricCalibrationApi.ts
 │       │   ├── imageComparisonApi.ts
@@ -331,7 +342,8 @@ vision-information/
 │       │   └── calculationStore.ts
 │       │
 │       ├── theme/                    # UI theme
-│       │   └── theme.ts
+│       │   ├── theme.ts
+│       │   └── status.ts             # Màu cho status (pass/warning/fail...)
 │       │
 │       └── types/                    # TypeScript types
 │           ├── colorCalibration.ts
@@ -390,93 +402,35 @@ http://localhost:9999/api
 
 ### Endpoints Chính
 
-#### 1. **Tính Toán** (`/calculate`)
+| Method | Path | Mô tả |
+|--------|------|-------|
+| POST | `/calculate` | Suy luận toàn bộ tham số từ giá trị đã biết |
+| POST | `/calculate/analyze` | Phân tích khả năng tính + dữ liệu đồ thị phụ thuộc |
+| GET | `/parameters`, `/parameters/{id}` | Định nghĩa tham số |
+| GET | `/formulas`, `/formulas/{id}` | Định nghĩa công thức (kèm công thức đảo) |
+| POST | `/recommend` | Gợi ý bộ camera + lens |
+| GET / POST | `/projects` | Danh sách / lưu dự án |
+| GET / DELETE | `/projects/{id}` | Tải / xoá dự án |
+| POST | `/lighting/analyze` | Phân tích chiếu sáng (multipart: `sequence[]`, `white_ref?`, `dark_frame?`) |
+| POST | `/quality/analyze` | Đánh giá chất lượng ảnh (multipart: `images[]`) |
+| POST | `/calibration/geometric` | Hiệu chỉnh hình học (multipart: `images[]`, `board_cols`, `board_rows`, `square_size_mm`, ...) |
+| POST | `/color/analyze` | Hiệu chỉnh màu (multipart: `image`, `image_type`) |
+| POST | `/comparison/analyze` | So sánh 2–100 ảnh (multipart: `images[]`, `names`, `weights`, `grayscale`) |
+| POST | `/validation/analyze` | Đánh giá hiệu năng hệ thống (JSON) |
+
+Ví dụ tính toán:
+
 ```http
-POST /calculate
+POST /api/calculate
 Content-Type: application/json
 
 {
-  "parameters": {
-    "sensor_width": 6.3,
-    "sensor_height": 5.5,
-    "focal_length": 25,
-    "resolution_x": 2048,
-    "resolution_y": 1536
-  }
+  "known_values": { "resolution_x": 2448, "pixel_size": 3.45, "focal_length": 50, "working_distance": 500 },
+  "targets": ["dof"]
 }
 ```
 
-**Response:**
-```json
-{
-  "results": {
-    "pixel_size": 0.00308,
-    "fov_horizontal": 45.2,
-    "fov_vertical": 34.8,
-    "working_distance": 150
-  },
-  "inferred_parameters": [
-    {
-      "name": "pixel_size",
-      "value": 0.00308,
-      "unit": "µm"
-    }
-  ]
-}
-```
-
-#### 2. **Hiệu Chỉnh Màu** (`/color-calibration`)
-```http
-POST /color-calibration
-Content-Type: multipart/form-data
-
-image: <binary>
-color_space: "sRGB"
-gamma: 2.2
-```
-
-#### 3. **Đánh Giá Chất Lượng Hình Ảnh** (`/image-quality`)
-```http
-POST /image-quality
-Content-Type: multipart/form-data
-
-image: <binary>
-```
-
-**Response:**
-```json
-{
-  "sharpness": 0.85,
-  "contrast": 0.72,
-  "brightness": 0.65,
-  "noise_level": 0.12,
-  "overall_quality": 0.83
-}
-```
-
-#### 4. **Gợi Ý Thiết Bị** (`/recommendations`)
-```http
-POST /recommendations
-Content-Type: application/json
-
-{
-  "requirements": {
-    "fov_horizontal": 45,
-    "resolution_x": 2048,
-    "working_distance": 150,
-    "budget": 5000
-  }
-}
-```
-
-#### 5. **Quản Lý Dự Án** (`/projects`)
-```http
-GET /projects                    # Lấy danh sách dự án
-POST /projects                   # Tạo dự án mới
-GET /projects/{project_id}       # Chi tiết dự án
-PUT /projects/{project_id}       # Cập nhật dự án
-DELETE /projects/{project_id}    # Xóa dự án
-```
+Response gồm `steps` (giá trị + công thức dùng cho từng tham số), `all_values`, `missing_for_targets`, `warnings`, `validation_errors`.
 
 ### Swagger UI
 Tất cả endpoints được tư liệu hóa đầy đủ trong Swagger UI:
@@ -504,6 +458,7 @@ pytest tests/test_engine.py -v
 ```
 
 ### Tests Có Sẵn
+- `test_api.py` - Smoke test cho mọi endpoint (ảnh tổng hợp)
 - `test_engine.py` - Kiểm tra calculation engine
 - `test_formulas.py` - Kiểm tra formulas và auto-inversion
 
@@ -511,47 +466,18 @@ pytest tests/test_engine.py -v
 
 ## 🔧 Development
 
-### Cấu Trúc Thư Mục Backend
-
-```python
-# backend/app/services/calculation_service.py
-- CalculationService
-  - calculate_parameters()
-  - infer_missing_values()
-  - get_parameter_graph()
-```
-
-```python
-# backend/calculation/engine.py
-- CalculationEngine
-  - execute()
-  - forward_chain()
-  - backward_chain()
-```
-
-### Cấu Trúc Thư Mục Frontend
-
-```typescript
-// src/stores/calculationStore.ts
-- useCalculationStore
-  - parameters: {}
-  - results: {}
-  - loading: boolean
-  - setParameters()
-  - calculateParameters()
-  - clearResults()
-```
+Xem [CLAUDE.md](CLAUDE.md) để biết kiến trúc chi tiết, quy ước code và checklist thêm module phân tích mới.
 
 ### Thêm Công Thức Mới
 
-1. Định nghĩa công thức trong `backend/knowledge/formulas.py`
-2. Thêm vào danh sách công thức chung
-3. Engine sẽ tự động suy luận các công thức đảo ngược
-4. API tự động hỗ trợ tính toán tham số mới
+1. Thêm một entry `_f(...)` vào `FORMULAS` trong `backend/knowledge/formulas.py`
+2. Engine tự động suy luận các công thức đảo ngược bằng SymPy
+3. API tự động hỗ trợ tính toán tham số mới
 
 ```python
-# Ví dụ
-FOV_FORMULA = Eq(fov, 2 * atan(sensor_width / (2 * focal_length)))
+_f("fov_x_from_sensor", "FOV X", "FOV = sensor_width / magnification",
+   ["sensor_width", "magnification"], "fov_x",
+   "sensor_width / magnification", cat="imaging"),
 ```
 
 ---
@@ -625,32 +551,6 @@ Nếu bạn gặp vấn đề hoặc có câu hỏi:
 ---
 
 **Cập nhật lần cuối**: Tháng 8 năm 2026
-│   │   └── units.py           ← Unit conversion system
-│   ├── calculation/
-│   │   ├── engine.py          ← Forward + inverse chaining engine
-│   │   ├── graph.py           ← NetworkX dependency graph
-│   │   └── validator.py       ← Input validation
-│   ├── app/
-│   │   ├── api/endpoints/     ← FastAPI endpoints
-│   │   ├── schemas/           ← Pydantic request/response models
-│   │   └── services/          ← Service layer
-│   ├── catalog/
-│   │   ├── cameras.json       ← Camera database (10 cameras)
-│   │   └── lenses.json        ← Lens database (13 lenses)
-│   ├── tests/                 ← pytest test suite
-│   └── main.py
-└── frontend/
-    └── src/
-        ├── components/
-        │   ├── Toolbar/        ← Top action bar
-        │   ├── ParameterPanel/ ← Left category tree
-        │   ├── WorkspacePanel/ ← Center: cards + graph + recommendations
-        │   ├── DetailsPanel/   ← Right: formula explainer
-        │   └── LogPanel/       ← Bottom: calculation log
-        ├── stores/             ← Zustand state management
-        ├── services/api.ts     ← Axios API client
-        └── types/index.ts      ← TypeScript type definitions
-```
 
 ---
 
@@ -703,22 +603,6 @@ The engine picks it up automatically. SymPy derives the inverse at startup.
 Edit `backend/catalog/cameras.json` or `lenses.json`.
 
 **No changes to the calculation engine are ever needed.**
-
----
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/calculate` | Run full inference from known values |
-| POST | `/api/calculate/analyze` | Reachability analysis + graph data |
-| GET | `/api/parameters` | List all parameter definitions |
-| GET | `/api/formulas` | List all formula definitions |
-| POST | `/api/recommend` | Camera + lens recommendations |
-| POST | `/api/projects` | Save project |
-| GET | `/api/projects/{id}` | Load project |
-
-Interactive docs: **http://localhost:9999/api/docs**
 
 ---
 

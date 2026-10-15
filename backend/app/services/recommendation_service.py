@@ -1,10 +1,7 @@
 """Camera and lens recommendation service."""
 from __future__ import annotations
 
-import json
 import math
-from pathlib import Path
-from typing import Any
 
 from app.schemas.recommendation import (
     CameraOut,
@@ -12,19 +9,8 @@ from app.schemas.recommendation import (
     RecommendRequest,
     SystemRecommendationOut,
 )
+from app.services.catalog import get_cameras, get_lenses
 from calculation.engine import engine
-
-_CATALOG_DIR = Path(__file__).parent.parent.parent / "catalog"
-
-
-def _load_cameras() -> list[dict]:
-    with open(_CATALOG_DIR / "cameras.json", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def _load_lenses() -> list[dict]:
-    with open(_CATALOG_DIR / "lenses.json", encoding="utf-8") as f:
-        return json.load(f)
 
 
 def _score_system(
@@ -86,8 +72,8 @@ def _score_system(
 
 
 def recommend_systems(req: RecommendRequest) -> list[SystemRecommendationOut]:
-    cameras = _load_cameras()
-    lenses = _load_lenses()
+    cameras = get_cameras()
+    lenses = get_lenses()
 
     results: list[SystemRecommendationOut] = []
 

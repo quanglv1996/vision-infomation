@@ -100,6 +100,7 @@ class TestFormulaCoverage:
                                    "conveyor_speed", "hyperfocal_distance",
                                    "dof", "airy_disk", "diffraction_limit",
                                    "numerical_aperture", "detectable_feature"]}
+        mock["working_distance"] = 3.0  # thin-lens formula needs WD > focal_length
         for formula in FORMULAS:
             try:
                 val = formula.evaluate(mock)

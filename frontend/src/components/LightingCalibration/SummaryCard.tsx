@@ -6,11 +6,12 @@ import {
   Cancel as FailIcon,
 } from '@mui/icons-material'
 import type { LightingAnalysisResult } from '@/types/lighting'
+import { TONE } from '@/theme/status'
 
 const STATUS_MAP = {
-  pass:    { label: 'PASS',    color: '#10B981', Icon: PassIcon },
-  warning: { label: 'WARNING', color: '#F59E0B', Icon: WarnIcon },
-  fail:    { label: 'FAIL',    color: '#EF4444', Icon: FailIcon },
+  pass:    { label: 'PASS',    color: TONE.success, Icon: PassIcon },
+  warning: { label: 'WARNING', color: TONE.warning, Icon: WarnIcon },
+  fail:    { label: 'FAIL',    color: TONE.error, Icon: FailIcon },
 }
 
 const Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (

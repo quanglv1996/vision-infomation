@@ -2,19 +2,13 @@ import React from 'react'
 import { Box, Card, CardContent, Chip, CircularProgress, Grid, Stack, Typography } from '@mui/material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import type { GeometricCalibrationResult } from '@/types/geometricCalibration'
+import { GRADE_COLORS, statusColor } from '@/theme/status'
 
 interface Props { result: GeometricCalibrationResult }
 
-const STATUS_COLOR: Record<string, string> = {
-  excellent:  '#10B981',
-  good:       '#3B82F6',
-  acceptable: '#F59E0B',
-  poor:       '#EF4444',
-}
-
 const QualityPanel: React.FC<Props> = ({ result: { quality, num_images_used } }) => {
   const { rms_error, mean_error, max_error, per_image_errors, calibration_score, status } = quality
-  const color = STATUS_COLOR[status] ?? '#9CA3AF'
+  const color = statusColor(GRADE_COLORS, status)
 
   const chartData = per_image_errors.map((e, i) => ({ img: `#${i}`, error: e }))
 

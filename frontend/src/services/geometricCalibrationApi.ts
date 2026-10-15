@@ -1,7 +1,5 @@
-import axios from 'axios'
+import { postForm } from './http'
 import type { CalibrationParams, GeometricCalibrationResult } from '@/types/geometricCalibration'
-
-const client = axios.create({ baseURL: '/api' })
 
 export const calibrateGeometric = (
   images: File[],
@@ -15,9 +13,5 @@ export const calibrateGeometric = (
   form.append('square_size_mm', String(params.squareSizeMm))
   if (params.sensorWidthMm)     form.append('sensor_width_mm',      String(params.sensorWidthMm))
   if (params.workingDistanceMm) form.append('working_distance_mm',  String(params.workingDistanceMm))
-  return client
-    .post<GeometricCalibrationResult>('/calibration/geometric', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then(r => r.data)
+  return postForm<GeometricCalibrationResult>('/calibration/geometric', form)
 }

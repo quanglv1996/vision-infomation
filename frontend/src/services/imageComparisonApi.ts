@@ -1,7 +1,5 @@
-import axios from 'axios'
+import { postForm } from './http'
 import type { ComparisonResult, ComparisonWeights, ImageItem } from '@/types/imageComparison'
-
-const client = axios.create({ baseURL: '/api' })
 
 export const analyzeComparison = (
   items: ImageItem[],
@@ -13,9 +11,5 @@ export const analyzeComparison = (
   form.append('names', JSON.stringify(items.map(i => i.name)))
   form.append('grayscale', String(grayscale))
   form.append('weights', JSON.stringify(weights))
-  return client
-    .post<ComparisonResult>('/comparison/analyze', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then(r => r.data)
+  return postForm<ComparisonResult>('/comparison/analyze', form)
 }

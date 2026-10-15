@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Chip, Grid, Stack, Typography } from '@mui/material'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import type { ColorCalibrationResult } from '@/types/colorCalibration'
 
 interface Props { result: ColorCalibrationResult }
@@ -54,12 +54,9 @@ const GrayBalancePanel: React.FC<Props> = ({ result: { gray_balance: gb } }) => 
           <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" />
           <ReferenceLine y={2}   stroke="#10B981" strokeDasharray="4 2" label={{ value: '+2%', fill: '#10B981', fontSize: 10 }} />
           <ReferenceLine y={-2}  stroke="#10B981" strokeDasharray="4 2" />
-          <Bar dataKey="deviation" radius={[3, 3, 0, 0]}
-            fill="#9CA3AF"
-            cell={chartData.map(d => (
-              <rect key={d.ch} fill={d.fill} />
-            )) as unknown as React.ReactElement}
-          />
+          <Bar dataKey="deviation" radius={[3, 3, 0, 0]} fill="#9CA3AF">
+            {chartData.map(d => <Cell key={d.ch} fill={d.fill} />)}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
       <Typography variant="caption" color="text.disabled">

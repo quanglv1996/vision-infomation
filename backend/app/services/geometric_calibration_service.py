@@ -8,6 +8,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
+from app.core import imaging
 from app.schemas.geometric_calibration import (
     CameraPoseResult,
     DistortionResult,
@@ -22,14 +23,6 @@ from app.schemas.geometric_calibration import (
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
-
-def _to_gray(img: np.ndarray) -> np.ndarray:
-    if img.ndim == 3 and img.shape[2] == 4:
-        return cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-    if img.ndim == 3:
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return img
-
 
 def _detect_corners(
     gray: np.ndarray,
@@ -353,7 +346,7 @@ def run_geometric_calibration(
     img_size: Optional[tuple[int, int]] = None
 
     for i, img in enumerate(images):
-        gray = _to_gray(img)
+        gray = imaging.to_gray(img)
         if img_size is None:
             img_size = (int(gray.shape[1]), int(gray.shape[0]))
         ret, corners = _detect_corners(gray, pattern_type, board_size)

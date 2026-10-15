@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import type { ExposureResult, NoiseQualityResult } from '@/types/imageQuality'
-import HeatmapCanvas from '../LightingCalibration/HeatmapCanvas'
+import HeatmapCanvas from '@/components/common/HeatmapCanvas'
 
 const SCORE_COLOR = (s: number) =>
   s >= 75 ? '#10B981' : s >= 50 ? '#F59E0B' : '#EF4444'

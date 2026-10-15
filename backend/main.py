@@ -8,8 +8,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
+from app.core.config import get_settings
 
-logging.basicConfig(level=logging.INFO)
+settings = get_settings()
+
+logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger("mvCalc")
 
 
@@ -23,41 +26,34 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="Machine Vision Calculator",
+    title=settings.app_name,
     description=(
         "Engineering Knowledge System for Machine Vision.\n\n"
         "Enter any known parameters — the engine automatically infers everything derivable."
     ),
-    version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    version=settings.version,
+    docs_url=f"{settings.api_prefix}/docs",
+    redoc_url=f"{settings.api_prefix}/redoc",
+    openapi_url=f"{settings.api_prefix}/openapi.json",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-    ],
-    allow_origin_regex=r"https://.*\.orivexus\.com",
+    allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix=settings.api_prefix)
 
 
 @app.get("/", include_in_schema=False)
 def root() -> dict:
     return {
-        "service": "Machine Vision Calculator API",
-        "version": "1.0.0",
-        "docs": "/api/docs",
+        "service": f"{settings.app_name} API",
+        "version": settings.version,
+        "docs": f"{settings.api_prefix}/docs",
     }

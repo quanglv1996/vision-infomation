@@ -8,16 +8,17 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { ValidationResult } from '@/types/validation'
+import { TONE, statusColor, type StatusColorMap } from '@/theme/status'
 
 interface Props { result: ValidationResult }
 
 const VERDICT_COLOR: Record<string, string> = {
   'PASS': '#10B981', 'CONDITIONAL PASS': '#F59E0B', 'FAIL': '#EF4444',
 }
-const STATUS_COLOR: Record<string, string> = {
-  excellent: '#10B981', capable: '#10B981', good: '#3B82F6',
-  acceptable: '#3B82F6', marginal: '#F59E0B', poor: '#EF4444',
-  incapable: '#EF4444', unacceptable: '#EF4444', 'n/a': '#6B7280',
+const STATUS_COLOR: StatusColorMap = {
+  excellent: TONE.success, capable: TONE.success, good: TONE.info,
+  acceptable: TONE.info, marginal: TONE.warning, poor: TONE.error,
+  incapable: TONE.error, unacceptable: TONE.error, 'n/a': TONE.muted,
 }
 
 const DashboardPanel: React.FC<Props> = ({ result }) => {
@@ -92,7 +93,7 @@ const DashboardPanel: React.FC<Props> = ({ result }) => {
         {modules.map(({ label, result: r }) => {
           const cs = fs.component_scores[label]
           if (!cs?.available) return null
-          const sc = STATUS_COLOR[r?.status ?? ''] ?? '#9CA3AF'
+          const sc = statusColor(STATUS_COLOR, r?.status)
           return (
             <Grid item xs={6} sm={4} md key={label}>
               <Box sx={{ p: 1.5, border: '1px solid', borderColor: sc + '55', borderRadius: 1, bgcolor: sc + '0a', textAlign: 'center' }}>

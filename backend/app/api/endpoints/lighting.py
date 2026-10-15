@@ -3,24 +3,13 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-import cv2
-import numpy as np
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
+from app.api.deps import read_images, read_optional_image, service_errors
 from app.schemas.lighting import LightingAnalysisResult
 from app.services.lighting_service import run_analysis
 
 router = APIRouter(prefix="/lighting", tags=["lighting"])
-
-_SUPPORTED = {".png", ".bmp", ".jpg", ".jpeg", ".tif", ".tiff"}
-
-
-def _decode(data: bytes, filename: str) -> np.ndarray:
-    arr = np.frombuffer(data, dtype=np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_UNCHANGED)
-    if img is None:
-        raise HTTPException(status_code=422, detail=f"Cannot decode image: {filename}")
-    return img
 
 
 @router.post("/analyze", response_model=LightingAnalysisResult)
@@ -41,24 +30,9 @@ async def analyze_lighting(
     if not sequence:
         raise HTTPException(status_code=400, detail="At least one image is required in sequence")
 
-    seq_imgs: list[np.ndarray] = []
-    for f in sequence:
-        data = await f.read()
-        seq_imgs.append(_decode(data, f.filename or ""))
+    seq_imgs = await read_images(sequence)
+    white_img = await read_optional_image(white_ref)
+    dark_img = await read_optional_image(dark_frame)
 
-    white_img: Optional[np.ndarray] = None
-    if white_ref:
-        data = await white_ref.read()
-        white_img = _decode(data, white_ref.filename or "")
-
-    dark_img: Optional[np.ndarray] = None
-    if dark_frame:
-        data = await dark_frame.read()
-        dark_img = _decode(data, dark_frame.filename or "")
-
-    try:
-        result = run_analysis(seq_imgs, white_img, dark_img)
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail=f"Analysis error: {exc}") from exc
-
-    return result
+    with service_errors("Analysis error"):
+        return run_analysis(seq_imgs, white_img, dark_img)

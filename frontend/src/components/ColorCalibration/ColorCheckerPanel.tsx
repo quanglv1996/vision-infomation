@@ -5,10 +5,9 @@ import {
 } from '@mui/material'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import type { ColorCalibrationResult } from '@/types/colorCalibration'
+import { PASS_FAIL_COLORS, statusColor } from '@/theme/status'
 
 interface Props { result: ColorCalibrationResult }
-
-const STATUS_COLOR = { pass: '#10B981', warning: '#F59E0B', fail: '#EF4444' }
 
 const Swatch = ({ rgb }: { rgb: number[] }) => (
   <Box sx={{ width: 20, height: 20, borderRadius: 0.5, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0,
@@ -32,7 +31,7 @@ const ColorCheckerPanel: React.FC<Props> = ({ result: { color_checker: cc } }) =
   const chartData = cc.patches.map(p => ({
     name: p.name.split(' ')[0],
     de:   parseFloat(p[deKey[metric]].toFixed(2)),
-    fill: STATUS_COLOR[p.status],
+    fill: statusColor(PASS_FAIL_COLORS, p.status),
   }))
 
   return (
@@ -107,7 +106,7 @@ const ColorCheckerPanel: React.FC<Props> = ({ result: { color_checker: cc } }) =
           </TableHead>
           <TableBody>
             {cc.patches.map(p => {
-              const sc = STATUS_COLOR[p.status] ?? '#9CA3AF'
+              const sc = statusColor(PASS_FAIL_COLORS, p.status)
               return (
                 <TableRow key={p.patch_id} hover>
                   <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{p.patch_id}</TableCell>

@@ -19,10 +19,8 @@ import PerspectivePanel from './PerspectivePanel'
 import ReportPanel    from './ReportPanel'
 import { calibrateGeometric } from '@/services/geometricCalibrationApi'
 import type { CalibrationParams, GeometricCalibrationResult } from '@/types/geometricCalibration'
-
-const STATUS_COLOR: Record<string, string> = {
-  excellent: '#10B981', good: '#3B82F6', acceptable: '#F59E0B', poor: '#EF4444',
-}
+import { GRADE_COLORS, statusColor } from '@/theme/status'
+import { errorMessage } from '@/services/http'
 
 const GeometricCalibration: React.FC = () => {
   const [result,    setResult]    = useState<GeometricCalibrationResult | null>(null)
@@ -39,14 +37,13 @@ const GeometricCalibration: React.FC = () => {
       setCollapsed(true)
       setTab(0)
     } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(detail ?? 'Calibration failed. Check images and board settings.')
+      setError(errorMessage(e, 'Calibration failed. Check images and board settings.'))
     } finally {
       setLoading(false)
     }
   }
 
-  const scoreColor = result ? STATUS_COLOR[result.quality.status] ?? '#9CA3AF' : '#9CA3AF'
+  const scoreColor = statusColor(GRADE_COLORS, result?.quality.status)
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
