@@ -68,7 +68,7 @@ const WorkspacePanel: React.FC = () => {
                       isTarget: false,
                     }
                     return (
-                      <Grid item xs={12} sm={6} md={4} lg={3} key={param.id}>
+                      <Grid item xs={12} sm={6} lg={4} xl={3} key={param.id}>
                         <ParameterCard param={param} state={state} />
                       </Grid>
                     )

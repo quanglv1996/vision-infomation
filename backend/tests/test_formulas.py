@@ -99,7 +99,10 @@ class TestFormulaCoverage:
                                    "motion_blur", "object_width", "wavelength",
                                    "conveyor_speed", "hyperfocal_distance",
                                    "dof", "airy_disk", "diffraction_limit",
-                                   "numerical_aperture", "detectable_feature"]}
+                                   "numerical_aperture", "detectable_feature",
+                                   "object_height", "fov_margin", "max_blur_allowed",
+                                   "frame_overlap", "line_rate", "encoder_resolution",
+                                   "tolerance", "required_accuracy", "max_mm_per_pixel"]}
         mock["working_distance"] = 3.0  # thin-lens formula needs WD > focal_length
         for formula in FORMULAS:
             try:

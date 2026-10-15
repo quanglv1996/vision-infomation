@@ -14,6 +14,7 @@ import {
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material'
 import { useCalcStore } from '@/stores/calculationStore'
 import { STATUS_COLORS } from '@/theme/theme'
+import { formatNumber as formatValue } from '@/utils/format'
 
 const ParameterPanel: React.FC = () => {
   const { parameterGroups, params, selectedParamId, selectParam } = useCalcStore()
@@ -113,12 +114,6 @@ const ParameterPanel: React.FC = () => {
       })}
     </Box>
   )
-}
-
-function formatValue(v: number): string {
-  if (Math.abs(v) < 0.001 && v !== 0) return v.toExponential(2)
-  if (Math.abs(v) >= 10000) return v.toExponential(2)
-  return v.toPrecision(4).replace(/\.?0+$/, '')
 }
 
 export default ParameterPanel

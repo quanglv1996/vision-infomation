@@ -47,6 +47,10 @@ Nhập vào bất kỳ thông số nào đã biết — công cụ tính toán s
 - ✅ **Project Management**: Quản lý dự án và lưu trữ kết quả
 
 ### Frontend (React + TypeScript)
+- ✅ **Thiết kế theo bài toán**: Chụp ảnh tĩnh, chụp ảnh động, quét dòng (line scan), đo kích thước, đọc mã/OCR — nhập ít thông số, tự tính và kiểm tra đạt/không đạt
+- ✅ **Giá trị phổ biến**: Mỗi thông số có danh sách giá trị thường dùng để chọn nhanh; chọn **Khác…** để nhập giá trị riêng
+- ✅ **Cách tính từng bước**: Hiển thị công thức, giá trị thay vào và kết quả của mỗi bước
+- ✅ **Tài liệu (Docs)**: Thư viện kiến thức machine vision và các kỹ thuật hiệu chuẩn, có công thức và ví dụ tính toán
 - ✅ **Responsive UI**: Giao diện phản hồi với Material-UI
 - ✅ **Panel-based Layout**: Bố cục dựa trên panel có thể thay đổi kích thước
 - ✅ **Real-time Calculation**: Cập nhật kết quả tính toán theo thời gian thực
@@ -177,13 +181,24 @@ npm run preview  # Xem trước build
 
 ## 📖 Hướng Dẫn Sử Dụng
 
-### 1. Tính Toán Thông Số
+### 1. Thiết Kế Hệ Vision Theo Bài Toán
 
-1. Mở ứng dụng tại `http://localhost:5173`
-2. Nhập các thông số máy ảnh/lens đã biết vào **Parameter Panel**
-3. Nhấn **Calculate** hoặc hệ thống sẽ tự động tính toán
-4. Xem kết quả chi tiết trong **Details Panel**
-5. Xem quan hệ tham số trong **Dependency Graph**
+1. Mở ứng dụng tại `http://localhost:5173`, chọn **Thiết kế hệ vision → Theo bài toán**
+2. Chọn bài toán: **Chụp ảnh tĩnh**, **Chụp ảnh động**, **Quét dòng (Line scan)**, **Đo kích thước chính xác** hoặc **Đọc mã / OCR**
+3. Chọn chế độ: *Biết WD → tính tiêu cự*, *Biết lens → tính WD* hoặc *Kiểm tra cấu hình có sẵn*
+4. Chọn cảm biến phổ biến và các giá trị từ danh sách (hoặc **Khác…** để tự nhập) — kết quả tự cập nhật
+5. Đọc **Kiểm tra yêu cầu** (đạt / cần chú ý / không đạt), **Gợi ý** và **Cách tính từng bước** ở cột bên phải
+6. Nút **Nâng cao** mang các thông số sang chế độ tự do (đồ thị phụ thuộc, gợi ý camera + lens)
+
+### 1b. Chế Độ Nâng Cao
+
+1. Nhập các thông số đã biết vào thẻ thông số (biểu tượng danh sách để chọn giá trị phổ biến)
+2. Nhấn **Calculate**
+3. Xem kết quả chi tiết trong **Details Panel** và quan hệ tham số trong **Dependency Graph**
+
+### 1c. Tài Liệu
+
+Mục **Tài liệu** gồm 3 nhóm: *Nền tảng* (cảm biến, FOV, lens, DOF & nhiễu xạ, chiếu sáng), *Bài toán vision* và *Hiệu chuẩn & kiểm định* (chiếu sáng, mm/pixel, hình học, màu, chất lượng ảnh, so sánh ảnh, kiểm định GR&R…). Mỗi bài có công thức, giải thích ký hiệu và ví dụ tính từng bước. Mỗi module phân tích có nút **Hướng dẫn** mở đúng bài liên quan.
 
 ### 2. Tải & Phân Tích Hình Ảnh
 

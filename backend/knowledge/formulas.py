@@ -83,6 +83,9 @@ class Formula:
     category: str = "general"
     notes: str = ""
     priority: int = 0   # lower value = tried first when multiple formulas target same output
+    # False for design rules (e.g. "3 px per feature"): solving them backwards
+    # would invent values (a feature size from the camera resolution).
+    invertible: bool = True
 
     # Auto-populated at __post_init__
     inverse_expressions: dict[str, str] = field(default_factory=dict, init=False)
@@ -91,9 +94,10 @@ class Formula:
 
     def __post_init__(self) -> None:
         self._fwd_code = compile(self.expression, f"<formula:{self.id}>", "eval")
-        self.inverse_expressions = _sympy_derive_inverses(
-            self.inputs, self.output, self.expression
-        )
+        if self.invertible:
+            self.inverse_expressions = _sympy_derive_inverses(
+                self.inputs, self.output, self.expression
+            )
         for inp, expr in self.inverse_expressions.items():
             self._inv_codes[inp] = compile(expr, f"<inv:{self.id}:{inp}>", "eval")
 
@@ -139,11 +143,12 @@ def _f(
     cat: str = "general",
     notes: str = "",
     priority: int = 0,
+    invertible: bool = True,
 ) -> Formula:
     return Formula(
         id=id, name=name, description=desc,
         inputs=inputs, output=output, expression=expr,
-        category=cat, notes=notes, priority=priority,
+        category=cat, notes=notes, priority=priority, invertible=invertible,
     )
 
 
@@ -248,12 +253,12 @@ FORMULAS: list[Formula] = [
        cat="imaging", priority=1),
 
     _f("fov_x_from_object_margin",
-       "FOV X from Object Width (20 % margin)",
-       "Minimum FOV to cover the object with 20 % alignment margin",
-       ["object_width"], "fov_x",
-       "object_width * 1.2",
+       "FOV X from Object Width + Margin",
+       "Minimum FOV to cover the object plus a positioning margin",
+       ["object_width", "fov_margin"], "fov_x",
+       "object_width * (1 + fov_margin / 100)",
        cat="imaging",
-       notes="Rule of thumb: 20 % margin for alignment tolerance.",
+       notes="Typical margin: 10–30 % depending on how well the part is fixtured.",
        priority=5),
 
     # ── Scale factor ──────────────────────────────────────────────────────────
@@ -302,7 +307,7 @@ FORMULAS: list[Formula] = [
        "fov_x / smallest_feature * 3",
        cat="imaging",
        notes="Nyquist criterion: 3 pixels per feature minimum for reliable detection.",
-       priority=10),
+       priority=10, invertible=False),
 
     # ── Motion blur ───────────────────────────────────────────────────────────
 
@@ -320,6 +325,47 @@ FORMULAS: list[Formula] = [
        ["motion_blur", "mm_per_pixel"], "blur_pixels",
        "motion_blur / mm_per_pixel",
        cat="motion"),
+
+    _f("max_exposure_from_blur",
+       "Max Exposure for Allowed Blur",
+       "t_max = allowed blur [px] × mm_per_pixel / speed",
+       ["max_blur_allowed", "mm_per_pixel", "speed"], "max_exposure_time",
+       "max_blur_allowed * mm_per_pixel / speed * 1e6",
+       # px × mm/px / (mm/s) = s  → × 1e6 = μs
+       cat="motion",
+       notes="Shorter exposures need more light — consider strobing above this limit."),
+
+    _f("required_fps_from_speed",
+       "Required Frame Rate",
+       "fps = speed / (FOV_Y × (1 − overlap))  — motion along the image Y axis",
+       ["speed", "fov_y", "frame_overlap"], "required_fps",
+       "speed / (fov_y * (1 - frame_overlap / 100))",
+       cat="motion",
+       notes="Each frame may advance at most (1 − overlap) × FOV_Y without leaving gaps."),
+
+    _f("line_rate_from_speed",
+       "Line Rate (square pixels)",
+       "line_rate = speed / mm_per_pixel   (kHz)",
+       ["speed", "mm_per_pixel"], "line_rate",
+       "speed / mm_per_pixel / 1000",
+       # (mm/s) / (mm/line) = lines/s → / 1000 = kHz
+       cat="linescan",
+       notes="Along-motion pixel size equals cross-motion pixel size only at this rate."),
+
+    _f("line_period_from_rate",
+       "Line Period",
+       "line_period = 1 / line_rate   (μs)",
+       ["line_rate"], "line_period",
+       "1000 / line_rate",
+       cat="linescan"),
+
+    _f("encoder_pulses_per_line_calc",
+       "Encoder Pulses per Line",
+       "pulses/line = encoder_resolution × mm_per_pixel",
+       ["encoder_resolution", "mm_per_pixel"], "encoder_pulses_per_line",
+       "encoder_resolution * mm_per_pixel",
+       cat="linescan",
+       notes="Round to an integer divider; < 1 means the encoder is too coarse."),
 
     _f("speed_from_conveyor",
        "Speed from Conveyor Belt Speed",
@@ -394,6 +440,27 @@ FORMULAS: list[Formula] = [
        "Estimate ≈ mm_per_pixel / 3  (edge-based sub-pixel)",
        ["mm_per_pixel"], "measurement_error",
        "mm_per_pixel / 3",
+       cat="inspection"),
+    _f("required_accuracy_from_tolerance",
+       "Required Accuracy (10:1 rule)",
+       "Measurement accuracy should be 1/10 of the tolerance band",
+       ["tolerance"], "required_accuracy",
+       "tolerance / 10",
+       cat="inspection",
+       notes="10:1 rule of thumb for gauge capability."),
+
+    _f("max_mm_per_pixel_from_accuracy",
+       "Max mm/pixel for Accuracy",
+       "Coarsest scale meeting the accuracy with 1/3 px sub-pixel edges",
+       ["required_accuracy"], "max_mm_per_pixel",
+       "required_accuracy * 3",
+       cat="inspection"),
+
+    _f("min_resolution_x_from_accuracy",
+       "Min Resolution X for Accuracy",
+       "min_resolution_x = FOV_X / max_mm_per_pixel",
+       ["fov_x", "max_mm_per_pixel"], "min_resolution_x",
+       "fov_x / max_mm_per_pixel",
        cat="inspection"),
 ]
 

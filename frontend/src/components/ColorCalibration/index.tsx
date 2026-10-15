@@ -17,6 +17,7 @@ import ColorReportPanel  from './ReportPanel'
 import { analyzeColor }  from '@/services/colorCalibrationApi'
 import type { ColorCalibrationResult } from '@/types/colorCalibration'
 import { errorMessage } from '@/services/http'
+import DocsButton from '@/components/common/DocsButton'
 
 const TYPE_LABEL: Record<string, string> = {
   white_card: 'White Card', gray_card: 'Gray Card',
@@ -70,6 +71,7 @@ const ColorCalibration: React.FC = () => {
               />
             </Stack>
           )}
+          <DocsButton docId="calib-color" />
           <Tooltip title={collapsed ? 'Expand' : 'Collapse'}>
             <IconButton size="small" onClick={() => setCollapsed(c => !c)}>
               {collapsed ? <ExpandMore /> : <ExpandLess />}

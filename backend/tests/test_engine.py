@@ -111,3 +111,51 @@ class TestWarnings:
         result = eng.calculate(known)
         nyquist_warnings = [w for w in result.warnings if "Nyquist" in w.message or "pixel" in w.message.lower()]
         assert len(nyquist_warnings) > 0
+
+
+class TestScenarios:
+    """Input sets used by the guided scenarios in the frontend."""
+
+    def test_static_design_solves_focal_length_without_conflicts(self, eng):
+        known = {"resolution_x": 2448, "resolution_y": 2048, "pixel_size": 3.45,
+                 "object_width": 80, "fov_margin": 20, "working_distance": 300,
+                 "f_number": 5.6, "wavelength": 525, "smallest_feature": 0.2}
+        result = eng.calculate(known)
+        v = result.all_values
+        assert v["fov_x"] == pytest.approx(96.0)
+        m = 2448 * 3.45 / 1000 / 96.0
+        assert v["focal_length"] == pytest.approx(300 * m / (1 + m))
+        assert not [w for w in result.warnings if w.kind == "conflict"]
+
+    def test_moving_object_exposure_and_fps(self, eng):
+        known = {"resolution_x": 2448, "resolution_y": 2048, "pixel_size": 3.45,
+                 "object_width": 80, "fov_margin": 20, "working_distance": 300,
+                 "speed": 500, "exposure_time": 100, "max_blur_allowed": 1,
+                 "frame_overlap": 20}
+        v = eng.calculate(known).all_values
+        mmpp = 96.0 / 2448
+        assert v["blur_pixels"] == pytest.approx(500 * 100e-6 / mmpp)
+        assert v["max_exposure_time"] == pytest.approx(mmpp / 500 * 1e6)
+        assert v["required_fps"] == pytest.approx(500 / (v["fov_y"] * 0.8))
+
+    def test_line_scan_rate_and_encoder(self, eng):
+        known = {"resolution_x": 4096, "pixel_size": 7.0, "object_width": 500,
+                 "fov_margin": 10, "working_distance": 600, "speed": 1000,
+                 "encoder_resolution": 20}
+        v = eng.calculate(known).all_values
+        mmpp = 550 / 4096
+        assert v["line_rate"] == pytest.approx(1000 / mmpp / 1000)
+        assert v["line_period"] == pytest.approx(1000 / v["line_rate"])
+        assert v["encoder_pulses_per_line"] == pytest.approx(20 * mmpp)
+
+    def test_measurement_resolution_requirement(self, eng):
+        known = {"object_width": 40, "fov_margin": 10, "tolerance": 0.05}
+        v = eng.calculate(known).all_values
+        assert v["required_accuracy"] == pytest.approx(0.005)
+        assert v["min_resolution_x"] == pytest.approx(44 / 0.015)
+
+    def test_design_rule_is_not_solved_backwards(self, eng):
+        """The 3-px Nyquist rule must not invent a feature size from the camera."""
+        v = eng.calculate({"resolution_x": 4096, "pixel_size": 3.45, "object_width": 40,
+                           "fov_margin": 10, "working_distance": 200}).all_values
+        assert "fov_x" in v and "smallest_feature" not in v

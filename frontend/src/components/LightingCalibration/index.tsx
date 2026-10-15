@@ -23,6 +23,7 @@ import FlickerPanel from './FlickerPanel'
 import DynamicRangePanel from './DynamicRangePanel'
 import RecommendationsPanel from './RecommendationsPanel'
 import { errorMessage } from '@/services/http'
+import DocsButton from '@/components/common/DocsButton'
 
 const TABS = [
   { label: 'Brightness',     key: 'brightness' },
@@ -87,6 +88,8 @@ const LightingCalibration: React.FC = () => {
         <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
           Upload image sequence to analyze lighting quality
         </Typography>
+        <Box sx={{ flex: 1 }} />
+        <DocsButton docId="calib-lighting" />
       </Stack>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>

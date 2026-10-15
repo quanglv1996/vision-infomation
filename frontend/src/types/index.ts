@@ -1,5 +1,10 @@
 // TypeScript types mirroring the backend Pydantic schemas
 
+export interface Preset {
+  value: number
+  label: string
+}
+
 export interface Parameter {
   id: string
   name: string
@@ -11,6 +16,7 @@ export interface Parameter {
   typical_range: [number, number] | null
   tags: string[]
   is_derived: boolean
+  presets: Preset[]
 }
 
 export interface ParameterGroup {

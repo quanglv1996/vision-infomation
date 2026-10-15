@@ -13,6 +13,7 @@ import DiffPanel       from './DiffPanel'
 import { analyzeComparison } from '@/services/imageComparisonApi'
 import type { ComparisonResult, ComparisonWeights, ImageItem } from '@/types/imageComparison'
 import { errorMessage } from '@/services/http'
+import DocsButton from '@/components/common/DocsButton'
 
 const COLORS = [
   '#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6',
@@ -63,6 +64,7 @@ const ImageComparison: React.FC = () => {
               />
             </Stack>
           )}
+          <DocsButton docId="image-comparison" />
           <Tooltip title={collapsed ? 'Expand upload' : 'Collapse'}>
             <IconButton size="small" onClick={() => setCollapsed(c => !c)}>
               {collapsed ? <ExpandMore /> : <ExpandLess />}

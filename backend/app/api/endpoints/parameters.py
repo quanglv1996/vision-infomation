@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from app.schemas.parameter import FormulaOut, ParameterGroupOut, ParameterOut
+from app.schemas.parameter import FormulaOut, ParameterGroupOut, ParameterOut, PresetOut
 from knowledge.formulas import FORMULA_BY_ID, FORMULAS, Formula
 from knowledge.parameters import PARAMETERS, Parameter
 
@@ -22,6 +22,7 @@ def _parameter_out(param: Parameter) -> ParameterOut:
         typical_range=param.typical_range,
         tags=list(param.tags),
         is_derived=param.is_derived,
+        presets=[PresetOut(value=v, label=label) for v, label in param.presets],
     )
 
 

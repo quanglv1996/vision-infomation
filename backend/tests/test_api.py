@@ -34,6 +34,11 @@ class TestMetadata:
         assert r.status_code == 200
         assert any(p["id"] == "focal_length" for g in r.json() for p in g["parameters"])
 
+    def test_parameters_expose_presets(self, client):
+        params = {p["id"]: p for g in client.get("/api/parameters").json() for p in g["parameters"]}
+        assert {"value": 25.0, "label": ""} in params["focal_length"]["presets"]
+        assert params["dof"]["presets"] == []
+
     def test_unknown_parameter_404(self, client):
         assert client.get("/api/parameters/nope").status_code == 404
 

@@ -18,6 +18,7 @@ import ColorPanel from './ColorPanel'
 import StatisticsPanel from './StatisticsPanel'
 import RecommendationsPanel from '../LightingCalibration/RecommendationsPanel'
 import { errorMessage } from '@/services/http'
+import DocsButton from '@/components/common/DocsButton'
 
 const TABS = [
   { label: 'Sharpness',         key: 'sharp' },
@@ -63,6 +64,8 @@ const ImageQuality: React.FC = () => {
         <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
           Objective metrics: sharpness · blur · noise · contrast · exposure · color
         </Typography>
+        <Box sx={{ flex: 1 }} />
+        <DocsButton docId="image-quality" />
       </Stack>
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>

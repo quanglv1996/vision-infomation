@@ -21,6 +21,7 @@ import { calibrateGeometric } from '@/services/geometricCalibrationApi'
 import type { CalibrationParams, GeometricCalibrationResult } from '@/types/geometricCalibration'
 import { GRADE_COLORS, statusColor } from '@/theme/status'
 import { errorMessage } from '@/services/http'
+import DocsButton from '@/components/common/DocsButton'
 
 const GeometricCalibration: React.FC = () => {
   const [result,    setResult]    = useState<GeometricCalibrationResult | null>(null)
@@ -67,6 +68,7 @@ const GeometricCalibration: React.FC = () => {
               />
             </Stack>
           )}
+          <DocsButton docId="calib-geometric" />
           <Tooltip title={collapsed ? 'Expand upload' : 'Collapse upload'}>
             <IconButton size="small" onClick={() => setCollapsed(c => !c)}>
               {collapsed ? <ExpandMore /> : <ExpandLess />}

@@ -5,6 +5,11 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class PresetOut(BaseModel):
+    value: float
+    label: str = ""
+
+
 class ParameterOut(BaseModel):
     id: str
     name: str
@@ -16,6 +21,7 @@ class ParameterOut(BaseModel):
     typical_range: Optional[tuple[float, float]] = None
     tags: list[str]
     is_derived: bool
+    presets: list[PresetOut] = []
 
 
 class ParameterGroupOut(BaseModel):

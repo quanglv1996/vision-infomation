@@ -62,32 +62,6 @@ const Toolbar: React.FC = () => {
       }}
     >
       <Stack direction="row" alignItems="center" sx={{ height: '100%', px: 2, gap: 1 }}>
-        {/* Brand */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
-          <Box
-            component="span"
-            sx={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #3B82F6, #10B981)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.6rem',
-              fontWeight: 700,
-              color: '#fff',
-            }}
-          >
-            MV
-          </Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, letterSpacing: 0.5, color: 'text.primary' }}>
-            Vision Calculator
-          </Typography>
-        </Box>
-
-        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
         {/* Primary action */}
         <Button
           variant="contained"
@@ -149,10 +123,6 @@ const Toolbar: React.FC = () => {
             )}
           </Stack>
         )}
-
-        <Typography variant="caption" sx={{ color: 'text.secondary', ml: 2 }}>
-          v1.0.0
-        </Typography>
       </Stack>
     </AppBar>
   )

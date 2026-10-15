@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Chip,
   IconButton,
+  Menu,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -10,8 +12,8 @@ import {
   Typography,
 } from '@mui/material'
 import {
+  FormatListBulleted as PresetIcon,
   GpsFixed as TargetIcon,
-  Info as InfoIcon,
 } from '@mui/icons-material'
 import type { Parameter, ParameterState } from '@/types'
 import { STATUS_COLORS } from '@/theme/theme'
@@ -28,6 +30,27 @@ const ParameterCard: React.FC<ParameterCardProps> = ({ param, state }) => {
   const status = state.status
   const color = STATUS_COLORS[status] ?? STATUS_COLORS.unknown
   const isSelected = selectedParamId === param.id
+
+  const [presetAnchor, setPresetAnchor] = useState<HTMLElement | null>(null)
+  const presets = param.presets ?? []
+
+  // Unit label plus, when the parameter has common values, a quick-pick menu button.
+  const endAdornment = (
+    <>
+      {param.unit && (
+        <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', ml: 0.5 }}>
+          {param.unit}
+        </Typography>
+      )}
+      {presets.length > 0 && (
+        <Tooltip title="Giá trị phổ biến">
+          <IconButton size="small" edge="end" sx={{ ml: 0.25 }} onClick={e => { e.stopPropagation(); setPresetAnchor(e.currentTarget) }}>
+            <PresetIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+        </Tooltip>
+      )}
+    </>
+  )
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.trim()
@@ -128,13 +151,7 @@ const ParameterCard: React.FC<ParameterCardProps> = ({ param, state }) => {
               borderColor: '#3B82F6',
             },
           }}
-          InputProps={{
-            endAdornment: param.unit ? (
-              <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', ml: 0.5 }}>
-                {param.unit}
-              </Typography>
-            ) : null,
-          }}
+          InputProps={{ endAdornment }}
         />
       ) : status === 'unknown' || status === 'missing' ? (
         <TextField
@@ -155,13 +172,7 @@ const ParameterCard: React.FC<ParameterCardProps> = ({ param, state }) => {
               bgcolor: status === 'missing' ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
             },
           }}
-          InputProps={{
-            endAdornment: param.unit ? (
-              <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', ml: 0.5 }}>
-                {param.unit}
-              </Typography>
-            ) : null,
-          }}
+          InputProps={{ endAdornment }}
         />
       ) : (
         /* calculated / inverse / target */
@@ -195,6 +206,28 @@ const ParameterCard: React.FC<ParameterCardProps> = ({ param, state }) => {
           )}
         </Box>
       )}
+
+      <Menu
+        anchorEl={presetAnchor}
+        open={Boolean(presetAnchor)}
+        onClose={() => setPresetAnchor(null)}
+        onClick={e => e.stopPropagation()}
+        PaperProps={{ sx: { maxHeight: 320 } }}
+      >
+        {presets.map(p => (
+          <MenuItem
+            key={p.value}
+            dense
+            onClick={() => { setParamValue(param.id, p.value); setPresetAnchor(null) }}
+            sx={{ fontSize: '0.8rem', gap: 1 }}
+          >
+            <Box component="span" sx={{ fontFamily: '"JetBrains Mono", monospace', minWidth: 64 }}>
+              {p.value} {param.unit}
+            </Box>
+            {p.label && <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>{p.label}</Box>}
+          </MenuItem>
+        ))}
+      </Menu>
     </Paper>
   )
 }

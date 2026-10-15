@@ -16,6 +16,7 @@ import ValidationReportPanel from './ReportPanel'
 import { runValidation }    from '@/services/validationApi'
 import type { ValidationRequest, ValidationResult } from '@/types/validation'
 import { errorMessage } from '@/services/http'
+import DocsButton from '@/components/common/DocsButton'
 
 const VERDICT_COLOR: Record<string, string> = {
   'PASS': '#10B981', 'CONDITIONAL PASS': '#F59E0B', 'FAIL': '#EF4444',
@@ -74,6 +75,7 @@ const ValidationModule: React.FC = () => {
               />
             </Stack>
           )}
+          <DocsButton docId="validation" />
           <Tooltip title={collapsed ? 'Expand input' : 'Collapse input'}>
             <IconButton size="small" onClick={() => setCollapsed(c => !c)}>
               {collapsed ? <ExpandMore /> : <ExpandLess />}
