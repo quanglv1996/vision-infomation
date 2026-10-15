@@ -14,12 +14,12 @@ import {
 import { useNavStore } from '@/stores/navStore'
 import { MODULES } from '@/modules'
 import { ACCENT, tint } from '@/theme/theme'
+import { foldText } from '@/utils/format'
 import DocRenderer from './DocRenderer'
 import { ARTICLES, ARTICLE_BY_ID, DOC_CATEGORIES } from './content'
 import type { DocArticle, DocBlock } from './types'
 
-/** Lower-case, strip Vietnamese diacritics — so "do sau" matches "độ sâu". */
-const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
+const fold = foldText
 
 const blockText = (b: DocBlock): string => {
   switch (b.type) {

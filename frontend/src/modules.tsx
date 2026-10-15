@@ -8,6 +8,8 @@ import {
   FactCheck as ValidIcon,
   CompareArrows as CompareIcon,
   MenuBook as DocsIcon,
+  Bookmarks as ConfigsIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
 import CalculatorModule from '@/components/CalculatorModule'
@@ -18,6 +20,8 @@ import ColorCalibration from '@/components/ColorCalibration'
 import ValidationModule from '@/components/ValidationModule'
 import ImageComparison from '@/components/ImageComparison'
 import DocsModule from '@/components/Docs'
+import ConfigsModule from '@/components/Configs'
+import AdminModule from '@/components/Admin'
 import { ACCENT } from '@/theme/theme'
 
 export interface AppModule {
@@ -29,6 +33,8 @@ export interface AppModule {
   accent: string
   Icon: SvgIconComponent
   Component: React.ComponentType
+  /** Only listed for admins (other modules are open to guests). */
+  adminOnly?: boolean
 }
 
 /**
@@ -37,6 +43,7 @@ export interface AppModule {
  */
 export const MODULES: AppModule[] = [
   { id: 'calculator', label: 'Thiết kế hệ vision', caption: 'System calculator',   group: 'Thiết kế',   accent: ACCENT.blue,    Icon: CalcIcon,    Component: CalculatorModule },
+  { id: 'configs',    label: 'Cấu hình đã lưu',    caption: 'Saved configs',       group: 'Thiết kế',   accent: ACCENT.emerald, Icon: ConfigsIcon, Component: ConfigsModule },
   { id: 'lighting',   label: 'Chiếu sáng',         caption: 'Lighting calib.',     group: 'Hiệu chuẩn', accent: ACCENT.amber,   Icon: LightIcon,   Component: LightingCalibration },
   { id: 'geocal',     label: 'Hình học',           caption: 'Geometric calib.',    group: 'Hiệu chuẩn', accent: ACCENT.violet,  Icon: CalibIcon,   Component: GeometricCalibration },
   { id: 'color',      label: 'Màu sắc',            caption: 'Color calib.',        group: 'Hiệu chuẩn', accent: ACCENT.pink,    Icon: ColorIcon,   Component: ColorCalibration },
@@ -44,4 +51,5 @@ export const MODULES: AppModule[] = [
   { id: 'comparison', label: 'So sánh ảnh',        caption: 'Image compare',       group: 'Phân tích',  accent: ACCENT.cyan,    Icon: CompareIcon, Component: ImageComparison },
   { id: 'validation', label: 'Kiểm định hệ thống', caption: 'Validation',          group: 'Phân tích',  accent: ACCENT.rose,    Icon: ValidIcon,   Component: ValidationModule },
   { id: 'docs',       label: 'Tài liệu',           caption: 'Docs & hướng dẫn',    group: 'Kiến thức',  accent: ACCENT.indigo,  Icon: DocsIcon,    Component: DocsModule },
+  { id: 'admin',      label: 'Quản lý tài khoản',  caption: 'User admin',          group: 'Quản trị',   accent: ACCENT.violet,  Icon: AdminIcon,   Component: AdminModule, adminOnly: true },
 ]

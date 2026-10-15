@@ -13,7 +13,9 @@ import {
 import type { CalculationResponse, Parameter, ParameterGroup } from '@/types'
 import { runCalculation } from '@/services/api'
 import { errorMessage } from '@/services/http'
-import { useCalcStore } from '@/stores/calculationStore'
+import SaveConfigButton from '@/components/Configs/SaveConfigButton'
+import { useConfigStore } from '@/stores/configStore'
+import { useFreeFormStore } from '@/stores/freeFormStore'
 import { useNavStore } from '@/stores/navStore'
 import { tint } from '@/theme/theme'
 import PresetField from './PresetField'
@@ -150,6 +152,25 @@ const ScenarioView: React.FC<ScenarioViewProps> = ({ groups, onOpenAdvanced }) =
     consumeScenario()
   }, [requestedId, consumeScenario])
 
+  // Saved config opened from "Cấu hình đã lưu".
+  const pending = useConfigStore(s => s.pending)
+  useEffect(() => {
+    const target = pending?.scenario_id ? SCENARIOS.find(s => s.id === pending.scenario_id) : undefined
+    if (!pending || !target) return
+    const cfgMode = target.modes.some(m => m.id === pending.mode) ? pending.mode! : target.modes[0].id
+    // Defaults only for fields the saved mode does not show; the saved inputs win.
+    const base: Values = { ...target.defaults }
+    for (const section of target.sections) {
+      for (const field of section.fields) if (!field.modes || field.modes.includes(cfgMode)) delete base[field.id]
+    }
+    setScenarioId(target.id)
+    setModes(all => ({ ...all, [target.id]: cfgMode }))
+    setValuesById(all => ({ ...all, [target.id]: { ...base, ...pending.values } }))
+    const store = useConfigStore.getState()
+    store.link({ ...pending, mode: cfgMode })
+    store.consume()
+  }, [pending])
+
   const scenario = SCENARIOS.find(s => s.id === scenarioId) ?? SCENARIOS[0]
   const mode = modes[scenario.id] ?? scenario.modes[0].id
   const values = valuesById[scenario.id] ?? scenario.defaults
@@ -185,12 +206,9 @@ const ScenarioView: React.FC<ScenarioViewProps> = ({ groups, onOpenAdvanced }) =
     return () => clearTimeout(timer)
   }, [inputs])
 
-  const openAdvanced = async () => {
-    const store = useCalcStore.getState()
-    store.clearAll()
-    for (const [k, v] of Object.entries(inputs)) store.setParamValue(k, v)
+  const openAdvanced = () => {
+    useFreeFormStore.getState().load(inputs)
     onOpenAdvanced()
-    await store.calculate()
   }
 
   const modeInfo = scenario.modes.find(m => m.id === mode)
@@ -239,7 +257,7 @@ const ScenarioView: React.FC<ScenarioViewProps> = ({ groups, onOpenAdvanced }) =
         <Box sx={{ mt: 2, p: 1.25, borderRadius: 2, border: '1px dashed', borderColor: 'divider' }}>
           <Typography sx={{ fontSize: '0.74rem', fontWeight: 600, mb: 0.5 }}>Bài toán khác?</Typography>
           <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', mb: 1 }}>
-            Chế độ nâng cao cho phép nhập bất kỳ thông số nào và xem đồ thị phụ thuộc.
+            Chế độ Nâng cao cho phép nhập bất kỳ thông số nào, đặt mục tiêu và xem đồ thị phụ thuộc.
           </Typography>
           <Button size="small" variant="outlined" startIcon={<AdvancedIcon />} onClick={onOpenAdvanced} fullWidth>
             Chế độ nâng cao
@@ -249,7 +267,7 @@ const ScenarioView: React.FC<ScenarioViewProps> = ({ groups, onOpenAdvanced }) =
 
       {/* Inputs */}
       <Box sx={{ overflowY: { md: 'auto' }, p: { xs: 2, md: 3 } }}>
-        <Stack direction={{ xs: 'column', lg: 'row' }} alignItems={{ lg: 'flex-start' }} justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
+        <Stack gap={1.5} sx={{ mb: 2 }}>
           <Stack direction="row" gap={1.5} alignItems="center">
             <Box sx={{ width: 46, height: 46, flexShrink: 0, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${scenario.accent} 0%, ${tint(scenario.accent, 0.5)} 100%)`, boxShadow: `0 8px 24px ${tint(scenario.accent, 0.35)}` }}>
               <scenario.Icon sx={{ fontSize: 26, color: '#fff' }} />
@@ -259,12 +277,13 @@ const ScenarioView: React.FC<ScenarioViewProps> = ({ groups, onOpenAdvanced }) =
               <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{scenario.subtitle}</Typography>
             </Box>
           </Stack>
-          <Stack direction="row" gap={1} flexWrap="wrap">
+          <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
+            <SaveConfigButton scenarioId={scenario.id} mode={mode} values={inputs} suggestedName={`${scenario.title} — ${new Date().toLocaleDateString('vi-VN')}`} />
             <Button size="small" variant="outlined" startIcon={<DocsIcon />} onClick={() => openDoc(scenario.docId)}>Tài liệu</Button>
             <Tooltip title="Khôi phục giá trị mặc định của bài toán">
               <Button size="small" variant="outlined" color="inherit" startIcon={<ResetIcon />} onClick={() => setValues(scenario.defaults)}>Đặt lại</Button>
             </Tooltip>
-            <Tooltip title="Mở các thông số hiện tại trong chế độ nâng cao">
+            <Tooltip title="Chuyển các thông số hiện tại sang chế độ Nâng cao (tính toán tự do)">
               <Button size="small" variant="outlined" color="inherit" startIcon={<AdvancedIcon />} onClick={openAdvanced}>Nâng cao</Button>
             </Tooltip>
           </Stack>

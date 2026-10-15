@@ -44,22 +44,21 @@ Nhập vào bất kỳ thông số nào đã biết — công cụ tính toán s
 - ✅ **Geometric Calibration**: Hiệu chỉnh hình học camera
 - ✅ **Quality Assessment**: Đánh giá chất lượng hình ảnh
 - ✅ **Lighting Analysis**: Phân tích điều kiện ánh sáng
-- ✅ **Project Management**: Quản lý dự án và lưu trữ kết quả
+- ✅ **Tài khoản & cấu hình (PostgreSQL)**: Đăng ký có xác nhận email, đăng nhập JWT, quản trị tài khoản, lưu/mở lại cấu hình theo từng người dùng
 
 ### Frontend (React + TypeScript)
 - ✅ **Thiết kế theo bài toán**: Chụp ảnh tĩnh, chụp ảnh động, quét dòng (line scan), đo kích thước, đọc mã/OCR — nhập ít thông số, tự tính và kiểm tra đạt/không đạt
 - ✅ **Giá trị phổ biến**: Mỗi thông số có danh sách giá trị thường dùng để chọn nhanh; chọn **Khác…** để nhập giá trị riêng
 - ✅ **Cách tính từng bước**: Hiển thị công thức, giá trị thay vào và kết quả của mỗi bước
 - ✅ **Tài liệu (Docs)**: Thư viện kiến thức machine vision và các kỹ thuật hiệu chuẩn, có công thức và ví dụ tính toán
-- ✅ **Responsive UI**: Giao diện phản hồi với Material-UI
-- ✅ **Panel-based Layout**: Bố cục dựa trên panel có thể thay đổi kích thước
+- ✅ **Chế độ Nâng cao (tự do)**: Nhập bất kỳ thông số nào, đặt mục tiêu, xem cách tính và đồ thị phụ thuộc — cùng giao diện với chế độ theo bài toán
+- ✅ **Gợi ý camera + lens**: Xếp hạng tổ hợp trong catalog theo FOV / WD / độ chính xác hiện tại (ở cả hai chế độ)
+- ✅ **Tài khoản**: Đăng ký (xác nhận qua email), đăng nhập, quên mật khẩu, đổi mật khẩu
+- ✅ **Cấu hình đã lưu**: Lưu cấu hình đang tính, mở lại để thử nghiệm/sửa, nhân bản, đổi tên, xuất/nhập JSON
+- ✅ **Quản lý tài khoản (admin)**: Duyệt đăng ký, thêm, sửa, khóa/mở khóa, xóa tài khoản
 - ✅ **Real-time Calculation**: Cập nhật kết quả tính toán theo thời gian thực
 - ✅ **Image Upload & Preview**: Tải và xem trước hình ảnh
-- ✅ **Dependency Visualization**: Trực quan hóa quan hệ giữa các thông số
-- ✅ **Parameter Panel**: Giao diện nhập liệu cho các thông số
-- ✅ **Details Panel**: Hiển thị chi tiết kết quả tính toán
-- ✅ **Log Panel**: Xem nhật ký hoạt động của hệ thống
-- ✅ **State Management**: Quản lý trạng thái bằng Zustand
+- ✅ **State Management**: Quản lý trạng thái bằng Zustand + react-query
 
 ---
 
@@ -114,6 +113,7 @@ Nhập vào bất kỳ thông số nào đã biết — công cụ tính toán s
 ### Yêu Cầu Hệ Thống
 - **Node.js** 16+ (cho Frontend)
 - **Python** 3.9+ (cho Backend)
+- **PostgreSQL** 14+ (lưu tài khoản và cấu hình; Docker Compose đã kèm sẵn)
 - **Docker** & **Docker Compose** (tùy chọn)
 
 ### Tùy Chọn 1: Chạy Local (Phát Triển)
@@ -131,11 +131,20 @@ source venv/Scripts/activate  # Windows: venv\Scripts\activate
 # Cài đặt dependencies
 pip install -r requirements.txt
 
-# Chạy server
+# PostgreSQL (nếu chưa có): chạy tạm bằng Docker
+docker run -d --name vision-db -e POSTGRES_USER=vision -e POSTGRES_PASSWORD=vision \
+  -e POSTGRES_DB=vision -p 5432:5432 postgres:16-alpine
+
+# Cấu hình qua biến môi trường MVC_* hoặc file backend/.env
+export MVC_DATABASE_URL=postgresql+psycopg://vision:vision@localhost:5432/vision
+export MVC_ADMIN_EMAIL=admin@vision.local MVC_ADMIN_PASSWORD='ChangeMe@123'
+# Không đặt MVC_SMTP_HOST → email (link xác nhận) được in ra log backend
+
+# Chạy server (bảng dữ liệu và tài khoản admin được tạo tự động khi khởi động)
 uvicorn main:app --reload --port 9999
 ```
 
-Server sẽ khởi động tại: `http://localhost:9999`
+Server sẽ khởi động tại: `http://localhost:9999`. Các module tính toán và phân tích ảnh vẫn chạy khi chưa có database; chỉ đăng nhập và lưu cấu hình cần PostgreSQL (trả 503 khi không kết nối được).
 
 **API Docs**: Truy cập `http://localhost:9999/api/docs` để xem Swagger UI
 
@@ -158,12 +167,19 @@ npm run dev
 
 ```bash
 # Từ thư mục gốc của project
+cp .env.example .env        # đổi MVC_SECRET_KEY, mật khẩu admin, SMTP…
 docker compose up --build
 
 # Frontend: http://localhost:5173
 # Backend API: http://localhost:9999
 # API Docs: http://localhost:9999/api/docs
+# Hộp thư dev (Mailpit): http://localhost:8025 — mọi email xác nhận / đặt lại mật khẩu hiện ở đây
 ```
+
+Compose gồm 4 dịch vụ: `db` (PostgreSQL 16, dữ liệu trong volume `pgdata`), `mailpit` (bắt email khi phát triển), `backend`, `frontend`.
+Tài khoản quản trị mặc định: `admin@vision.local` / `ChangeMe@123` (đặt bằng `MVC_ADMIN_EMAIL` / `MVC_ADMIN_PASSWORD` trước lần chạy đầu, hoặc đổi mật khẩu sau khi đăng nhập).
+
+Để gửi email thật, đặt `MVC_SMTP_HOST`, `MVC_SMTP_PORT`, `MVC_SMTP_USER`, `MVC_SMTP_PASSWORD`, `MVC_SMTP_STARTTLS` / `MVC_SMTP_SSL`, `MVC_SMTP_FROM` trong `.env` (ví dụ Gmail trong `.env.example`) và đặt `MVC_FRONTEND_URL` là địa chỉ người dùng truy cập (dùng cho link trong email).
 
 ### Tùy Chọn 3: Build Sản Phẩm
 
@@ -188,17 +204,39 @@ npm run preview  # Xem trước build
 3. Chọn chế độ: *Biết WD → tính tiêu cự*, *Biết lens → tính WD* hoặc *Kiểm tra cấu hình có sẵn*
 4. Chọn cảm biến phổ biến và các giá trị từ danh sách (hoặc **Khác…** để tự nhập) — kết quả tự cập nhật
 5. Đọc **Kiểm tra yêu cầu** (đạt / cần chú ý / không đạt), **Gợi ý** và **Cách tính từng bước** ở cột bên phải
-6. Nút **Nâng cao** mang các thông số sang chế độ tự do (đồ thị phụ thuộc, gợi ý camera + lens)
+6. **Gợi ý camera + lens từ catalog** (cột phải) tìm tổ hợp phù hợp với FOV / WD / độ chính xác hiện tại
+7. Nút **Nâng cao** mang các thông số sang chế độ tự do; nút **Lưu** lưu cấu hình (cần đăng nhập)
 
-### 1b. Chế Độ Nâng Cao
+### 1b. Chế Độ Nâng Cao (tính toán tự do)
 
-1. Nhập các thông số đã biết vào thẻ thông số (biểu tượng danh sách để chọn giá trị phổ biến)
-2. Nhấn **Calculate**
-3. Xem kết quả chi tiết trong **Details Panel** và quan hệ tham số trong **Dependency Graph**
+Dùng khi bài toán không nằm trong 5 bài toán mẫu, hoặc khi bạn biết một tổ hợp thông số khác thường (VD: biết lens + DOF, cần WD).
+
+1. Chọn nhóm thông số ở cột trái (Camera, Lens, Vật, Chuyển động…) hoặc tìm theo tên
+2. Nhập/chọn bất kỳ thông số nào đã biết — kết quả tự tính; ô tính được hiển thị giá trị màu xanh, bấm **Tính được** để xem công thức
+3. Bấm biểu tượng 🎯 để đặt **mục tiêu**: cột phải cho biết còn thiếu thông số nào để tính được
+4. **Đồ thị phụ thuộc** hiển thị quan hệ giữa các thông số; **Lưu** lưu cấu hình như ở chế độ theo bài toán
 
 ### 1c. Tài Liệu
 
 Mục **Tài liệu** gồm 3 nhóm: *Nền tảng* (cảm biến, FOV, lens, DOF & nhiễu xạ, chiếu sáng), *Bài toán vision* và *Hiệu chuẩn & kiểm định* (chiếu sáng, mm/pixel, hình học, màu, chất lượng ảnh, so sánh ảnh, kiểm định GR&R…). Mỗi bài có công thức, giải thích ký hiệu và ví dụ tính từng bước. Mỗi module phân tích có nút **Hướng dẫn** mở đúng bài liên quan.
+
+### 1d. Tài Khoản & Cấu Hình Đã Lưu
+
+1. Bấm **Đăng nhập** (góc dưới thanh điều hướng) → tab **Đăng ký**, nhập họ tên, email, mật khẩu (≥ 8 ký tự)
+2. Mở email xác nhận và bấm **Xác nhận email** — ứng dụng tự đăng nhập. Không nhận được email? Dùng **Gửi lại** trong hộp đăng nhập
+3. Trong **Thiết kế hệ vision**, bấm **Lưu** để lưu cấu hình đang làm. Sau khi lưu, cấu hình được "liên kết": chip xanh hiển thị tên và trạng thái *chưa lưu* khi bạn sửa; bấm **Lưu** lần nữa để cập nhật, hoặc menu ⋮ → **Lưu thành cấu hình mới**
+4. Mục **Cấu hình đã lưu**: tìm kiếm, lọc theo bài toán, xem chi tiết (thông số nhập + kết quả lúc lưu), **Mở** để thử nghiệm/sửa, đổi tên, nhân bản, xuất/nhập JSON, xóa
+5. Menu tài khoản → **Hồ sơ & mật khẩu** để đổi tên hoặc mật khẩu; **Quên mật khẩu?** trong hộp đăng nhập gửi link đặt lại qua email
+
+Khách (chưa đăng nhập) vẫn dùng được mọi module tính toán và phân tích; đăng nhập chỉ cần để lưu cấu hình.
+
+### 1e. Quản Lý Tài Khoản (admin)
+
+Mục **Quản trị → Quản lý tài khoản** chỉ hiện với quản trị viên:
+- Thống kê: tổng tài khoản, chờ xác nhận email, quản trị viên, đã khóa (bấm để lọc)
+- **Duyệt** tài khoản chờ xác nhận (đánh dấu email đã xác nhận) hoặc **gửi lại email xác nhận**
+- **Thêm** tài khoản (mặc định đã xác nhận), **sửa** họ tên / email / vai trò / mật khẩu, **khóa / mở khóa**, **xóa** (xóa kèm cấu hình của người đó)
+- Khóa tài khoản hoặc đặt mật khẩu mới sẽ đăng xuất người dùng khỏi mọi thiết bị. Không thể tự khóa, tự hạ quyền, tự xóa, hoặc xóa quản trị viên cuối cùng
 
 ### 2. Tải & Phân Tích Hình Ảnh
 
@@ -217,15 +255,9 @@ Mục **Tài liệu** gồm 3 nhóm: *Nền tảng* (cảm biến, FOV, lens, DO
 
 ### 4. Gợi Ý Thiết Bị
 
-1. Nhập các yêu cầu quang học (FOV, Resolution, etc.)
-2. Hệ thống sẽ đề xuất máy ảnh và lens phù hợp từ danh sách
-3. So sánh các tùy chọn khác nhau
-
-### 5. Quản Lý Dự Án
-
-1. Lưu trữ cấu hình hiện tại như một dự án
-2. Tải dự án đã lưu trước đó
-3. So sánh các phiên bản khác nhau
+1. Nhập yêu cầu trong **Thiết kế hệ vision** (theo bài toán hoặc Nâng cao) — cần có FOV ngang
+2. Ở cột kết quả, bấm **Tìm camera + lens phù hợp**
+3. So sánh 5 tổ hợp có điểm cao nhất (độ phân giải, mm/pixel, DOF, nhòe…)
 
 ---
 
@@ -243,13 +275,22 @@ vision-information/
 │   │   ├── __init__.py
 │   │   │
 │   │   ├── core/                     # Dùng chung toàn backend
-│   │   │   ├── config.py             # Settings (env prefix MVC_)
-│   │   │   └── imaging.py            # Helper ảnh: decode, to_gray, downsample...
+│   │   │   ├── config.py             # Settings (env prefix MVC_): DB, JWT, SMTP, admin
+│   │   │   ├── errors.py             # AppError → {"detail": {code, message}}
+│   │   │   ├── imaging.py            # Helper ảnh: decode, to_gray, downsample...
+│   │   │   ├── mailer.py             # Gửi email SMTP (hoặc ghi log khi chưa cấu hình)
+│   │   │   └── security.py           # bcrypt + JWT (access / verify / reset)
+│   │   │
+│   │   ├── db/                       # PostgreSQL (SQLAlchemy 2)
+│   │   │   ├── models.py             # User, SavedConfig
+│   │   │   └── session.py            # Engine, get_db, tạo bảng + admin khi khởi động
 │   │   │
 │   │   ├── api/                      # API routes
 │   │   │   ├── router.py             # Main router (danh sách _MODULES)
-│   │   │   ├── deps.py               # Đọc ảnh upload + map lỗi service → HTTP
+│   │   │   ├── deps.py               # Đọc ảnh upload, map lỗi service → HTTP, get_current_user / require_admin
 │   │   │   └── endpoints/            # API endpoints
+│   │   │       ├── admin_users.py    # Quản lý tài khoản (admin)
+│   │   │       ├── auth.py           # Đăng ký, xác nhận email, đăng nhập, mật khẩu
 │   │   │       ├── calculate.py      # Calculation endpoint
 │   │   │       ├── color_calibration.py
 │   │   │       ├── geometric_calibration.py
@@ -257,7 +298,7 @@ vision-information/
 │   │   │       ├── image_quality.py
 │   │   │       ├── lighting.py
 │   │   │       ├── parameters.py
-│   │   │       ├── projects.py       # Project management
+│   │   │       ├── configs.py        # Cấu hình đã lưu của người dùng
 │   │   │       ├── recommendations.py
 │   │   │       └── validation.py
 │   │   │
@@ -269,7 +310,8 @@ vision-information/
 │   │   │   ├── image_quality.py
 │   │   │   ├── lighting.py
 │   │   │   ├── parameter.py
-│   │   │   ├── project.py
+│   │   │   ├── auth.py               # Tài khoản + admin
+│   │   │   ├── config.py             # Cấu hình đã lưu
 │   │   │   ├── recommendation.py
 │   │   │   └── validation.py
 │   │   │
@@ -281,7 +323,9 @@ vision-information/
 │   │       ├── image_comparison_service.py
 │   │       ├── image_quality_service.py
 │   │       ├── lighting_service.py
-│   │       ├── project_service.py    # ProjectRepository (in-memory)
+│   │       ├── auth_service.py       # Đăng ký / xác nhận / đăng nhập / reset
+│   │       ├── config_service.py     # CRUD cấu hình + snapshot kết quả
+│   │       ├── user_service.py       # Quản trị tài khoản
 │   │       ├── recommendation_service.py
 │   │       └── validation_service.py
 │   │
@@ -302,7 +346,9 @@ vision-information/
 │   │   └── lenses.json               # Lens specifications
 │   │
 │   └── tests/                        # Unit tests
+│       ├── conftest.py               # Test dùng SQLite in-memory (hoặc MVC_TEST_DATABASE_URL)
 │       ├── test_api.py               # Smoke test mọi endpoint
+│       ├── test_auth.py              # Tài khoản, admin, cấu hình đã lưu
 │       ├── test_engine.py
 │       └── test_formulas.py
 │
@@ -332,20 +378,22 @@ vision-information/
 │       │   ├── ImageQuality/
 │       │   ├── LightingCalibration/
 │       │   │
-│       │   ├── CalculatorModule/     # Layout của tab Calculator
-│       │   ├── common/               # Component dùng chung (HeatmapCanvas)
-│       │   ├── DependencyGraph/      # Dependency visualization
-│       │   ├── DetailsPanel/         # Results display
-│       │   ├── ParameterPanel/       # Input parameters
-│       │   ├── LogPanel/             # Activity logs
-│       │   ├── RecommendationPanel/  # Equipment recommendations
-│       │   ├── Toolbar/              # Top toolbar
-│       │   ├── ValidationModule/     # Validation UI
-│       │   └── WorkspacePanel/       # Project management
+│       │   ├── Admin/                # Quản lý tài khoản (admin)
+│       │   ├── Auth/                 # Hộp đăng nhập/đăng ký, link email, menu tài khoản, hồ sơ
+│       │   ├── CalculatorModule/     # Thiết kế hệ vision: Theo bài toán | Nâng cao
+│       │   ├── Configs/              # Cấu hình đã lưu + nút Lưu dùng trong calculator
+│       │   ├── common/               # Component dùng chung (ModuleHeader, ConfirmDialog, HeatmapCanvas…)
+│       │   ├── DependencyGraph/      # Đồ thị phụ thuộc (reactflow)
+│       │   ├── FreeForm/             # Chế độ Nâng cao (tính toán tự do)
+│       │   ├── Recommendations/      # Gợi ý camera + lens từ catalog
+│       │   ├── Scenarios/            # Chế độ theo bài toán
+│       │   └── ValidationModule/     # Validation UI
 │       │
 │       ├── services/                 # API services
 │       │   ├── http.ts               # Axios client dùng chung + errorMessage
-│       │   ├── api.ts                # Calculator / projects / recommend
+│       │   ├── api.ts                # Calculator / recommend
+│       │   ├── authApi.ts            # Tài khoản + admin
+│       │   ├── configApi.ts          # Cấu hình đã lưu
 │       │   ├── colorCalibrationApi.ts
 │       │   ├── geometricCalibrationApi.ts
 │       │   ├── imageComparisonApi.ts
@@ -354,7 +402,10 @@ vision-information/
 │       │   └── validationApi.ts
 │       │
 │       ├── stores/                   # Zustand state management
-│       │   └── calculationStore.ts
+│       │   ├── authStore.ts          # Token, user, hộp đăng nhập
+│       │   ├── configStore.ts        # Cấu hình đang liên kết với calculator
+│       │   ├── freeFormStore.ts      # Giá trị của chế độ Nâng cao
+│       │   └── navStore.ts           # Module đang mở + deep link
 │       │
 │       ├── theme/                    # UI theme
 │       │   ├── theme.ts
@@ -369,7 +420,8 @@ vision-information/
 │           ├── validation.ts
 │           └── index.ts
 │
-├── docker-compose.yml                # Docker Compose config
+├── docker-compose.yml                # db (PostgreSQL) + mailpit + backend + frontend
+├── .env.example                      # Biến môi trường mẫu (secret, admin, SMTP)
 └── README.md                          # This file
 ```
 
@@ -424,8 +476,18 @@ http://localhost:9999/api
 | GET | `/parameters`, `/parameters/{id}` | Định nghĩa tham số |
 | GET | `/formulas`, `/formulas/{id}` | Định nghĩa công thức (kèm công thức đảo) |
 | POST | `/recommend` | Gợi ý bộ camera + lens |
-| GET / POST | `/projects` | Danh sách / lưu dự án |
-| GET / DELETE | `/projects/{id}` | Tải / xoá dự án |
+| POST | `/auth/register` | Đăng ký (gửi email xác nhận) |
+| POST | `/auth/verify-email` | Xác nhận email từ link → trả token |
+| POST | `/auth/resend-verification` | Gửi lại email xác nhận |
+| POST | `/auth/login` | Đăng nhập → `access_token` (Bearer) |
+| POST | `/auth/forgot-password`, `/auth/reset-password` | Quên / đặt lại mật khẩu qua email |
+| GET / PATCH | `/auth/me` | Thông tin / đổi tên, mật khẩu |
+| GET / POST | `/admin/users` | (admin) Danh sách / tạo tài khoản |
+| PATCH / DELETE | `/admin/users/{id}` | (admin) Sửa, khóa, duyệt / xóa |
+| POST | `/admin/users/{id}/send-verification` | (admin) Gửi lại email xác nhận |
+| GET / POST | `/configs` | Cấu hình đã lưu của bạn / lưu mới |
+| GET / PATCH / DELETE | `/configs/{id}` | Xem / cập nhật / xóa |
+| POST | `/configs/{id}/duplicate` | Nhân bản |
 | POST | `/lighting/analyze` | Phân tích chiếu sáng (multipart: `sequence[]`, `white_ref?`, `dark_frame?`) |
 | POST | `/quality/analyze` | Đánh giá chất lượng ảnh (multipart: `images[]`) |
 | POST | `/calibration/geometric` | Hiệu chỉnh hình học (multipart: `images[]`, `board_cols`, `board_rows`, `square_size_mm`, ...) |
@@ -472,8 +534,12 @@ pytest --cov=app tests/
 pytest tests/test_engine.py -v
 ```
 
+Tests dùng SQLite in-memory nên không cần PostgreSQL. Để chạy trên PostgreSQL thật (bảng sẽ bị xóa trước):
+`MVC_TEST_DATABASE_URL=postgresql+psycopg://vision:vision@localhost:5432/vision_test pytest`
+
 ### Tests Có Sẵn
 - `test_api.py` - Smoke test cho mọi endpoint (ảnh tổng hợp)
+- `test_auth.py` - Đăng ký/xác nhận/đăng nhập, quản trị tài khoản, cấu hình đã lưu
 - `test_engine.py` - Kiểm tra calculation engine
 - `test_formulas.py` - Kiểm tra formulas và auto-inversion
 

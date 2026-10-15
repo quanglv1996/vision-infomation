@@ -154,37 +154,3 @@ export interface SystemRecommendation {
   reasons: string[]
   warnings: string[]
 }
-
-// ── Projects ─────────────────────────────────────────────────────────────────
-
-export interface Project {
-  id: string
-  name: string
-  description: string
-  known_values: Record<string, number>
-  targets: string[]
-  notes: string
-  created_at: string
-  updated_at: string
-}
-
-export interface ProjectSummary {
-  id: string
-  name: string
-  description: string
-  parameter_count: number
-  created_at: string
-  updated_at: string
-}
-
-// ── UI state ──────────────────────────────────────────────────────────────────
-
-export type ParameterStatus = 'unknown' | 'input' | 'calculated' | 'inverse' | 'target' | 'missing'
-
-export interface ParameterState {
-  id: string
-  value: number | null
-  status: ParameterStatus
-  isTarget: boolean
-  step?: CalculationStep
-}

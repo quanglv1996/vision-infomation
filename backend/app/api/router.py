@@ -7,23 +7,28 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.endpoints import (
+    admin_users,
+    auth,
     calculate,
     color_calibration,
+    configs,
     geometric_calibration,
     image_comparison,
     image_quality,
     lighting,
     parameters,
-    projects,
     recommendations,
     validation,
 )
 
 _MODULES = [
+    # Accounts (PostgreSQL)
+    auth,
+    admin_users,
+    configs,
     # Calculator
     calculate,
     parameters,
-    projects,
     recommendations,
     # Image-analysis modules
     lighting,

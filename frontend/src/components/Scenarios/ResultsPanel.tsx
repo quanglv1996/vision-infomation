@@ -15,7 +15,8 @@ import type { CalculationResponse, CalculationStep, Parameter } from '@/types'
 import { TONE } from '@/theme/status'
 import { MONO_FONT, tint } from '@/theme/theme'
 import { formatNumber } from '@/utils/format'
-import { PARAM_LABELS_VI } from './paramLabels'
+import StepList, { labelOf } from './StepList'
+import Recommendations from '@/components/Recommendations'
 import type { CheckStatus, Scenario, Values } from './scenarios'
 
 const STATUS_STYLE: Record<CheckStatus, { color: string; Icon: typeof PassIcon; text: string }> = {
@@ -34,20 +35,7 @@ interface ResultsPanelProps {
   paramById: Record<string, Parameter>
 }
 
-const labelOf = (id: string, paramById: Record<string, Parameter>) => PARAM_LABELS_VI[id] ?? paramById[id]?.name ?? id
-
-/** Replace parameter ids in an expression by their values, for "cách tính". */
-function substitute(expr: string, values: Record<string, number>): string {
-  let out = expr
-  for (const id of Object.keys(values).sort((a, b) => b.length - a.length)) {
-    out = out.replace(new RegExp(`\\b${id}\\b`, 'g'), formatNumber(values[id], 5))
-  }
-  return prettify(out)
-}
-
-const prettify = (expr: string) => expr.replace(/\*\*/g, '^').replace(/\*/g, '×').replace(/\s+/g, ' ')
-
-const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: 1.1, textTransform: 'uppercase', color: '#64748B', mb: 1 }}>
     {children}
   </Typography>
@@ -181,6 +169,12 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ scenario, mode, inputs, res
         </Box>
       )}
 
+      {result && (
+        <Box sx={{ mb: 2.5 }}>
+          <Recommendations values={values} accent={scenario.accent} />
+        </Box>
+      )}
+
       {/* Step-by-step */}
       {steps.length > 0 && (
         <Accordion disableGutters>
@@ -191,29 +185,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ scenario, mode, inputs, res
             </Stack>
           </AccordionSummary>
           <AccordionDetails sx={{ pt: 0 }}>
-            <Stack gap={1.25}>
-              {steps.map((s, i) => (
-                <Box key={s.parameter_id} sx={{ pl: 1.5, borderLeft: '2px solid', borderColor: tint(scenario.accent, 0.4) }}>
-                  <Typography sx={{ fontSize: '0.76rem', fontWeight: 600 }}>
-                    {i + 1}. {labelOf(s.parameter_id, paramById)}
-                    <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> — {s.formula_name}</Box>
-                  </Typography>
-                  {s.expression && (
-                    <Typography sx={{ fontFamily: MONO_FONT, fontSize: '0.7rem', color: '#94A3B8', wordBreak: 'break-word' }}>
-                      = {prettify(s.expression)}
-                    </Typography>
-                  )}
-                  {s.expression && (
-                    <Typography sx={{ fontFamily: MONO_FONT, fontSize: '0.7rem', color: '#CBD5E1', wordBreak: 'break-word' }}>
-                      = {substitute(s.expression, s.input_values)}
-                    </Typography>
-                  )}
-                  <Typography sx={{ fontFamily: MONO_FONT, fontSize: '0.76rem', color: scenario.accent, fontWeight: 700 }}>
-                    = {formatNumber(s.value, 5)} {paramById[s.parameter_id]?.unit ?? ''}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
+            <StepList steps={steps} accent={scenario.accent} paramById={paramById} />
           </AccordionDetails>
         </Accordion>
       )}

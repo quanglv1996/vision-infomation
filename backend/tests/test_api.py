@@ -60,11 +60,6 @@ class TestCalculator:
         assert r.status_code == 200
         assert len(r.json()) <= 10
 
-    def test_project_crud(self, client):
-        pid = client.post("/api/projects", json={"name": "p", "known_values": {"focal_length": 25}}).json()["id"]
-        assert client.get(f"/api/projects/{pid}").status_code == 200
-        assert client.delete(f"/api/projects/{pid}").status_code == 204
-        assert client.get(f"/api/projects/{pid}").status_code == 404
 
 
 class TestImageModules:

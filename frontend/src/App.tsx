@@ -4,7 +4,12 @@ import {
   KeyboardDoubleArrowLeft as CollapseIcon,
   KeyboardDoubleArrowRight as ExpandIcon,
 } from '@mui/icons-material'
+import { useQueryClient } from '@tanstack/react-query'
+import AccountMenu from '@/components/Auth/AccountMenu'
+import AuthDialog from '@/components/Auth/AuthDialog'
+import EmailLinkHandler from '@/components/Auth/EmailLinkHandler'
 import { MODULES, type AppModule } from '@/modules'
+import { useAuthStore } from '@/stores/authStore'
 import { useNavStore } from '@/stores/navStore'
 import { tint } from '@/theme/theme'
 
@@ -63,9 +68,20 @@ const NavItem: React.FC<{ module: AppModule; active: boolean; open: boolean; onC
 const App: React.FC = () => {
   const { moduleId, setModule } = useNavStore()
   const [open, setOpen] = useState(true)
+  const user = useAuthStore(s => s.user)
+  const queryClient = useQueryClient()
 
-  const active = MODULES.find(m => m.id === moduleId) ?? MODULES[0]
-  const groups = [...new Set(MODULES.map(m => m.group))]
+  useEffect(() => { useAuthStore.getState().init() }, [])
+
+  // Per-user server data must not outlive the session that fetched it.
+  useEffect(() => {
+    queryClient.removeQueries({ queryKey: ['configs'] })
+    queryClient.removeQueries({ queryKey: ['admin-users'] })
+  }, [user?.id, queryClient])
+
+  const modules = MODULES.filter(m => !m.adminOnly || user?.role === 'admin')
+  const active = modules.find(m => m.id === moduleId) ?? modules[0]
+  const groups = [...new Set(modules.map(m => m.group))]
 
   // Keep visited modules mounted so uploads and results survive tab switches.
   const [visited, setVisited] = useState<Set<string>>(() => new Set([active.id]))
@@ -126,7 +142,7 @@ const App: React.FC = () => {
                 <Box sx={{ mx: 1.5, mb: 1, borderTop: '1px solid', borderColor: 'divider' }} />
               )}
               <Stack gap={0.25}>
-                {MODULES.filter(m => m.group === group).map(m => (
+                {modules.filter(m => m.group === group).map(m => (
                   <NavItem key={m.id} module={m} active={m.id === active.id} open={open} onClick={() => setModule(m.id)} />
                 ))}
               </Stack>
@@ -134,11 +150,15 @@ const App: React.FC = () => {
           ))}
         </Box>
 
+        <Box sx={{ borderTop: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
+          <AccountMenu open={open} />
+        </Box>
+
         <Stack
           direction="row" alignItems="center" justifyContent={open ? 'space-between' : 'center'}
-          sx={{ px: 1.5, height: 44, borderTop: '1px solid', borderColor: 'divider', flexShrink: 0 }}
+          sx={{ px: 1.5, height: 40, borderTop: '1px solid', borderColor: 'divider', flexShrink: 0 }}
         >
-          {open && <Typography variant="caption">v1.1.0</Typography>}
+          {open && <Typography variant="caption">v1.2.0</Typography>}
           <IconButton size="small" onClick={() => setOpen(v => !v)} aria-label={open ? 'Thu gọn menu' : 'Mở rộng menu'}>
             {open ? <CollapseIcon fontSize="small" /> : <ExpandIcon fontSize="small" />}
           </IconButton>
@@ -147,12 +167,15 @@ const App: React.FC = () => {
 
       {/* Active module */}
       <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        {MODULES.filter(m => visited.has(m.id) || m.id === active.id).map(({ id, Component }) => (
+        {modules.filter(m => visited.has(m.id) || m.id === active.id).map(({ id, Component }) => (
           <Box key={id} sx={{ height: '100%', display: id === active.id ? 'block' : 'none' }}>
             <Component />
           </Box>
         ))}
       </Box>
+
+      <AuthDialog />
+      <EmailLinkHandler />
     </Box>
   )
 }

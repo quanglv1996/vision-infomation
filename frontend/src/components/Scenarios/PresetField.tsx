@@ -3,6 +3,7 @@ import {
   Box, IconButton, InputAdornment, ListSubheader, MenuItem, Select, Stack, TextField, Tooltip, Typography,
 } from '@mui/material'
 import {
+  Backspace as ClearIcon,
   EditOutlined as EditIcon,
   FormatListBulleted as ListIcon,
   InfoOutlined as InfoIcon,
@@ -11,6 +12,7 @@ import type { Parameter } from '@/types'
 import { formatNumber } from '@/utils/format'
 
 const CUSTOM = '__custom__'
+const CLEAR = '__clear__'
 
 interface PresetFieldProps {
   param: Parameter
@@ -19,6 +21,10 @@ interface PresetFieldProps {
   value: number | null
   accent: string
   onChange: (value: number | null) => void
+  /** Shown while empty (e.g. the value the engine derived). */
+  placeholder?: string
+  /** Extra controls at the right of the label row. */
+  headerExtra?: React.ReactNode
 }
 
 const sameValue = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b))
@@ -28,7 +34,7 @@ const sameValue = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1
  * plus "Khác…" which switches to free entry. Parameters without presets are
  * always free entry.
  */
-const PresetField: React.FC<PresetFieldProps> = ({ param, label, hint, value, accent, onChange }) => {
+const PresetField: React.FC<PresetFieldProps> = ({ param, label, hint, value, accent, onChange, placeholder, headerExtra }) => {
   const presets = param.presets ?? []
   const matchIdx = value === null ? -1 : presets.findIndex(p => sameValue(p.value, value))
   const [custom, setCustom] = useState(presets.length === 0 || (value !== null && matchIdx < 0))
@@ -75,6 +81,7 @@ const PresetField: React.FC<PresetFieldProps> = ({ param, label, hint, value, ac
           <InfoIcon sx={{ fontSize: 14, color: 'text.secondary', cursor: 'help' }} />
         </Tooltip>
       )}
+      {headerExtra && <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>{headerExtra}</Box>}
     </Stack>
   )
 
@@ -86,7 +93,7 @@ const PresetField: React.FC<PresetFieldProps> = ({ param, label, hint, value, ac
           fullWidth
           value={text}
           onChange={e => handleText(e.target.value)}
-          placeholder="Nhập giá trị…"
+          placeholder={placeholder ?? 'Nhập giá trị…'}
           inputProps={{ inputMode: 'decimal' }}
           sx={{ '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: accent } }}
           InputProps={{
@@ -118,10 +125,11 @@ const PresetField: React.FC<PresetFieldProps> = ({ param, label, hint, value, ac
         onChange={e => {
           const v = e.target.value
           if (v === CUSTOM) { setCustom(true); return }
+          if (v === CLEAR) { setText(''); emit(null); return }
           emit(presets[Number(v)].value)
         }}
         renderValue={sel => {
-          if (sel === '') return <Typography sx={{ fontSize: '0.84rem', color: 'text.secondary' }}>Chọn…</Typography>
+          if (sel === '') return <Typography noWrap sx={{ fontSize: '0.84rem', color: 'text.secondary' }}>{placeholder ?? 'Chọn…'}</Typography>
           const p = presets[Number(sel)]
           return (
             <Stack direction="row" alignItems="baseline" gap={0.75}>
@@ -149,6 +157,11 @@ const PresetField: React.FC<PresetFieldProps> = ({ param, label, hint, value, ac
         <MenuItem value={CUSTOM} sx={{ fontSize: '0.82rem', gap: 1, borderTop: '1px solid', borderColor: 'divider', color: accent }}>
           <EditIcon sx={{ fontSize: 16 }} /> Khác… (nhập giá trị)
         </MenuItem>
+        {value !== null && (
+          <MenuItem value={CLEAR} sx={{ fontSize: '0.82rem', gap: 1, color: 'text.secondary' }}>
+            <ClearIcon sx={{ fontSize: 16 }} /> Bỏ trống
+          </MenuItem>
+        )}
       </Select>
     </Box>
   )

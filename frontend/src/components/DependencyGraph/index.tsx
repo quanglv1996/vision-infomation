@@ -1,62 +1,58 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import ReactFlow, {
   Background,
-  Controls,
-  MiniMap,
-  type Node,
-  type Edge,
-  Position,
-  Handle,
-  useNodesState,
-  useEdgesState,
   BackgroundVariant,
+  Controls,
+  Handle,
+  MiniMap,
+  Position,
+  type Edge,
+  type Node,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { Box, Typography } from '@mui/material'
-import { useCalcStore } from '@/stores/calculationStore'
-import { STATUS_COLORS } from '@/theme/theme'
 import { useQuery } from '@tanstack/react-query'
+import { labelOf } from '@/components/Scenarios/StepList'
 import { runAnalyze } from '@/services/api'
+import { STATUS_COLORS } from '@/theme/theme'
+import type { Parameter, ParameterGroup } from '@/types'
+import { formatNumber } from '@/utils/format'
 
-// ── Custom node ───────────────────────────────────────────────────────────────
+type NodeStatus = 'unknown' | 'input' | 'calculated' | 'target'
+
+const STATUS_LABEL: Record<NodeStatus, string> = {
+  input: 'Đã nhập',
+  calculated: 'Tính được',
+  target: 'Mục tiêu (chưa tính được)',
+  unknown: 'Chưa biết',
+}
 
 interface NodeData {
   label: string
   unit: string
-  category: string
-  status: keyof typeof STATUS_COLORS
+  status: NodeStatus
   value?: number
 }
 
 const ParameterNode: React.FC<{ data: NodeData }> = ({ data }) => {
-  const color = STATUS_COLORS[data.status] ?? STATUS_COLORS.unknown
+  const color = STATUS_COLORS[data.status]
   return (
     <Box
       sx={{
-        background: `linear-gradient(135deg, ${color}18, ${color}08)`,
-        border: `1.5px solid ${color}66`,
-        borderRadius: 1.5,
-        px: 1.5,
-        py: 0.75,
-        minWidth: 110,
-        maxWidth: 160,
-        textAlign: 'center',
+        background: `linear-gradient(135deg, ${color}22, ${color}0A)`,
+        border: `1.5px solid ${color}77`,
+        borderRadius: 1.5, px: 1.25, py: 0.6, width: 150, textAlign: 'center',
       }}
     >
       <Handle type="target" position={Position.Left} style={{ background: color, border: 'none', width: 7, height: 7 }} />
-      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color, lineHeight: 1.2 }}>
-        {data.label}
-      </Typography>
-      {data.unit && (
-        <Typography sx={{ fontSize: '0.62rem', color: '#64748B', mt: 0.3 }}>
-          [{data.unit}]
-        </Typography>
-      )}
-      {data.value !== undefined && (
+      <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color, lineHeight: 1.2 }}>{data.label}</Typography>
+      {data.value !== undefined ? (
         <Typography sx={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#E2E8F0', mt: 0.2 }}>
-          {fmtShort(data.value)}
+          {formatNumber(data.value, 3)} {data.unit}
         </Typography>
-      )}
+      ) : data.unit ? (
+        <Typography sx={{ fontSize: '0.6rem', color: '#64748B', mt: 0.2 }}>[{data.unit}]</Typography>
+      ) : null}
       <Handle type="source" position={Position.Right} style={{ background: color, border: 'none', width: 7, height: 7 }} />
     </Box>
   )
@@ -64,129 +60,96 @@ const ParameterNode: React.FC<{ data: NodeData }> = ({ data }) => {
 
 const nodeTypes = { parameterNode: ParameterNode }
 
-// ── Auto-layout helper (simple column layout by category) ─────────────────────
+const COL_WIDTH = 200
+const ROW_HEIGHT = 64
 
-const CATEGORIES = ['Camera', 'Lens', 'Object', 'Motion', 'Imaging', 'Optics', 'Lighting', 'Inspection']
-const COL_X: Record<string, number> = {
-  Camera: 0, Lens: 180, Object: 360, Motion: 540,
-  Imaging: 720, Optics: 900, Lighting: 1080, Inspection: 1260,
+interface DependencyGraphProps {
+  groups: ParameterGroup[]
+  /** Entered values. */
+  values: Record<string, number>
+  /** Everything known after calculation (entered + derived). */
+  computed: Record<string, number>
+  targets: string[]
 }
 
-const DependencyGraph: React.FC = () => {
-  const { params, parameterGroups } = useCalcStore()
-
-  const knownValues = useMemo(() => {
-    const kv: Record<string, number> = {}
-    for (const [id, p] of Object.entries(params)) {
-      if (p.value !== null) kv[id] = p.value!
-    }
-    return kv
-  }, [params])
-
-  const { data: analysisData } = useQuery({
-    queryKey: ['analyze', knownValues],
-    queryFn: () => runAnalyze({ known_values: knownValues, targets: [] }),
-    enabled: true,
+/** Parameter → formula → parameter graph, one column per category, coloured by status. */
+const DependencyGraph: React.FC<DependencyGraphProps> = ({ groups, values, computed, targets }) => {
+  const { data: analysis } = useQuery({
+    queryKey: ['analyze', values, targets],
+    queryFn: () => runAnalyze({ known_values: values, targets }),
   })
 
-  const nodes: Node[] = useMemo(() => {
-    const catCounts: Record<string, number> = {}
-    return parameterGroups.flatMap(group =>
-      group.parameters.map(param => {
-        const cat = group.category
-        const idx = catCounts[cat] ?? 0
-        catCounts[cat] = idx + 1
+  const paramById = useMemo(() => {
+    const map: Record<string, Parameter> = {}
+    for (const g of groups) for (const p of g.parameters) map[p.id] = p
+    return map
+  }, [groups])
 
-        const state = params[param.id]
-        const status = state?.status ?? 'unknown'
+  const statusOf = (id: string): NodeStatus =>
+    id in values ? 'input' : id in computed ? 'calculated' : targets.includes(id) ? 'target' : 'unknown'
 
-        // Override status from analysis data
-        const apiNode = analysisData?.graph_nodes?.find(n => n.id === param.id)
-        const displayStatus = apiNode?.data?.status ?? status
+  const nodes: Node[] = useMemo(() => groups.flatMap((group, col) =>
+    group.parameters.map((param, row) => ({
+      id: param.id,
+      type: 'parameterNode',
+      position: { x: col * COL_WIDTH, y: row * ROW_HEIGHT },
+      data: {
+        label: labelOf(param.id, paramById),
+        unit: param.unit,
+        status: statusOf(param.id),
+        value: computed[param.id],
+      } satisfies NodeData,
+    })),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [groups, paramById, values, computed, targets])
 
-        return {
-          id: param.id,
-          type: 'parameterNode',
-          position: { x: (COL_X[cat] ?? 0) + (idx % 2) * 10, y: Math.floor(idx / 1) * 70 },
-          data: {
-            label: param.name,
-            unit: param.unit,
-            category: cat,
-            status: displayStatus,
-            value: state?.value ?? undefined,
-          } as NodeData,
-        }
-      })
-    )
-  }, [parameterGroups, params, analysisData])
-
-  const edges: Edge[] = useMemo(() => {
-    if (!analysisData?.graph_edges) return []
-    return analysisData.graph_edges.map(e => ({
+  const edges: Edge[] = useMemo(() => (analysis?.graph_edges ?? []).map(e => {
+    const live = e.source in computed && e.target in computed
+    return {
       id: e.id,
       source: e.source,
       target: e.target,
-      label: e.label,
-      animated: params[e.target]?.status === 'calculated',
-      style: { stroke: '#475569', strokeWidth: 1.5 },
-      labelStyle: { fontSize: 9, fill: '#64748B' },
-      labelBgStyle: { fill: '#1A1D27' },
-    }))
-  }, [analysisData, params])
-
-  const [rfNodes, , onNodesChange] = useNodesState(nodes)
-  const [rfEdges, , onEdgesChange] = useEdgesState(edges)
+      animated: live && !(e.target in values),
+      style: { stroke: live ? '#10B98188' : '#33415588', strokeWidth: live ? 1.6 : 1 },
+    }
+  }), [analysis, computed, values])
 
   return (
-    <Box sx={{ width: '100%', height: '100%', bgcolor: '#0A0D15' }}>
+    <Box sx={{ width: '100%', height: '100%', bgcolor: '#0A0D15', position: 'relative' }}>
       <ReactFlow
-        nodes={rfNodes.length ? rfNodes : nodes}
-        edges={rfEdges.length ? rfEdges : edges}
+        nodes={nodes}
+        edges={edges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
         fitView
         fitViewOptions={{ padding: 0.1 }}
         defaultEdgeOptions={{ type: 'smoothstep' }}
         proOptions={{ hideAttribution: true }}
+        nodesConnectable={false}
       >
         <Background variant={BackgroundVariant.Dots} color="#1E2535" gap={20} size={1} />
-        <Controls style={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)' }} />
+        <Controls showInteractive={false} style={{ background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)' }} />
         <MiniMap
           style={{ background: '#0F1117', border: '1px solid rgba(255,255,255,0.1)' }}
-          nodeColor={node => STATUS_COLORS[(node.data as NodeData).status] ?? '#475569'}
+          maskColor="rgba(10,13,21,0.65)"
+          nodeColor={node => STATUS_COLORS[(node.data as NodeData).status]}
         />
       </ReactFlow>
 
-      {/* Legend */}
       <Box
         sx={{
-          position: 'absolute',
-          bottom: 16,
-          left: 16,
-          bgcolor: 'rgba(15,17,23,0.9)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 1,
-          p: 1,
-          display: 'flex',
-          gap: 1.5,
-          flexWrap: 'wrap',
+          position: 'absolute', top: 12, left: 12, bgcolor: 'rgba(15,17,23,0.92)', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 1.5, px: 1.25, py: 0.75, display: 'flex', gap: 1.5, flexWrap: 'wrap', zIndex: 5,
         }}
       >
-        {(Object.entries(STATUS_COLORS) as [string, string][]).map(([s, c]) => (
+        {(Object.keys(STATUS_LABEL) as NodeStatus[]).map(s => (
           <Box key={s} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c }} />
-            <Typography sx={{ fontSize: '0.65rem', color: '#94A3B8' }}>{s}</Typography>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: STATUS_COLORS[s] }} />
+            <Typography sx={{ fontSize: '0.68rem', color: '#94A3B8' }}>{STATUS_LABEL[s]}</Typography>
           </Box>
         ))}
       </Box>
     </Box>
   )
-}
-
-function fmtShort(v: number): string {
-  if (Math.abs(v) >= 10000) return v.toExponential(2)
-  return parseFloat(v.toPrecision(3)).toString()
 }
 
 export default DependencyGraph

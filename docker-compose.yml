@@ -1,4 +1,27 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-vision}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vision}
+      - POSTGRES_DB=${POSTGRES_DB:-vision}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # Dev mail catcher: every email the app sends shows up at http://localhost:8025.
+  # For real delivery set MVC_SMTP_* in .env (see .env.example).
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports:
+      - "8025:8025"
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -7,9 +30,24 @@ services:
       - "9999:9999"
     environment:
       - PYTHONUNBUFFERED=1
+      - MVC_DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-vision}:${POSTGRES_PASSWORD:-vision}@db:5432/${POSTGRES_DB:-vision}
+      - MVC_SECRET_KEY=${MVC_SECRET_KEY:-change-me-in-production}
+      - MVC_ADMIN_EMAIL=${MVC_ADMIN_EMAIL:-admin@vision.local}
+      - MVC_ADMIN_PASSWORD=${MVC_ADMIN_PASSWORD:-ChangeMe@123}
+      - MVC_FRONTEND_URL=${MVC_FRONTEND_URL:-http://localhost:5173}
+      - MVC_SMTP_HOST=${MVC_SMTP_HOST:-mailpit}
+      - MVC_SMTP_PORT=${MVC_SMTP_PORT:-1025}
+      - MVC_SMTP_USER=${MVC_SMTP_USER:-}
+      - MVC_SMTP_PASSWORD=${MVC_SMTP_PASSWORD:-}
+      - MVC_SMTP_FROM=${MVC_SMTP_FROM:-Vision Studio <no-reply@vision.local>}
+      - MVC_SMTP_STARTTLS=${MVC_SMTP_STARTTLS:-false}
+      - MVC_SMTP_SSL=${MVC_SMTP_SSL:-false}
     volumes:
       - ./backend:/app
     command: uvicorn main:app --host 0.0.0.0 --port 9999 --reload
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -23,3 +61,6 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,4 +1,4 @@
-import { getJson, http, postJson } from './http'
+import { getJson, postJson } from './http'
 import type {
   AnalyzeRequest,
   AnalyzeResponse,
@@ -6,8 +6,6 @@ import type {
   CalculationResponse,
   Formula,
   ParameterGroup,
-  Project,
-  ProjectSummary,
   RecommendRequest,
   SystemRecommendation,
 } from '@/types'
@@ -32,17 +30,3 @@ export const runAnalyze = (body: AnalyzeRequest): Promise<AnalyzeResponse> =>
 
 export const fetchRecommendations = (body: RecommendRequest): Promise<SystemRecommendation[]> =>
   postJson<SystemRecommendation[]>('/recommend', body)
-
-// ── Projects ───────────────────────────────────────────────────────────────
-
-export const fetchProjects = (): Promise<ProjectSummary[]> =>
-  getJson<ProjectSummary[]>('/projects')
-
-export const fetchProject = (id: string): Promise<Project> =>
-  getJson<Project>(`/projects/${id}`)
-
-export const saveProject = (body: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> =>
-  postJson<Project>('/projects', body)
-
-export const deleteProject = (id: string): Promise<void> =>
-  http.delete(`/projects/${id}`).then(() => undefined)
